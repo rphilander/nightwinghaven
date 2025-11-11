@@ -5,5 +5,5 @@ import mdx from '@astrojs/mdx';
 // https://astro.build/config
 export default defineConfig({
   integrations: [mdx()],
-  site: 'https://nightwinghaven.netlify.app', // Update this when you have your Netlify URL
+  site: 'https://twilightworld.ai',
 });
