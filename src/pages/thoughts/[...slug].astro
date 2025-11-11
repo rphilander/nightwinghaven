@@ -1,0 +1,379 @@
+---
+import { getCollection } from 'astro:content';
+import type { CollectionEntry } from 'astro:content';
+
+export async function getStaticPaths() {
+  const thoughts = await getCollection('thoughts');
+  return thoughts.map(thought => ({
+    params: { slug: thought.slug },
+    props: { thought },
+  }));
+}
+
+interface Props {
+  thought: CollectionEntry<'thoughts'>;
+}
+
+const { thought } = Astro.props;
+const { Content } = await thought.render();
+
+// Get all thoughts to find related ones and inbound links
+const allThoughts = await getCollection('thoughts');
+
+// Find related thoughts (outbound links)
+const relatedThoughts = thought.data.relatedThoughts?.map(slug =>
+  allThoughts.find(t => t.slug === slug)
+).filter(Boolean) || [];
+
+// Find inbound links (thoughts that link to this one)
+const inboundLinks = allThoughts.filter(t =>
+  t.data.relatedThoughts?.includes(thought.slug) && t.slug !== thought.slug
+);
+
+// Maturity emoji mapping
+const maturityEmoji = {
+  sprout: '🌱',
+  growing: '🌿',
+  evergreen: '🌳',
+};
+
+const maturityLabel = {
+  sprout: 'Sprout',
+  growing: 'Growing',
+  evergreen: 'Evergreen',
+};
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{thought.data.title} | Nightwing Haven</title>
+  <meta name="description" content={thought.data.summary}>
+</head>
+<body>
+  <nav class="nav">
+    <a href="/">← Back to Garden</a>
+  </nav>
+
+  <main class="container">
+    <header class="thought-header">
+      <div class="maturity-badge" data-maturity={thought.data.maturity}>
+        <span class="emoji">{maturityEmoji[thought.data.maturity]}</span>
+        <span class="label">{maturityLabel[thought.data.maturity]}</span>
+      </div>
+
+      <h1>{thought.data.title}</h1>
+
+      <p class="summary">{thought.data.summary}</p>
+
+      <div class="meta">
+        <time>
+          Created: {thought.data.createdAt.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          })}
+        </time>
+        {thought.data.updatedAt.getTime() !== thought.data.createdAt.getTime() && (
+          <time>
+            Updated: {thought.data.updatedAt.toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            })}
+          </time>
+        )}
+      </div>
+
+      {thought.data.tags && thought.data.tags.length > 0 && (
+        <div class="tags">
+          {thought.data.tags.map(tag => (
+            <span class="tag">{tag}</span>
+          ))}
+        </div>
+      )}
+    </header>
+
+    {thought.data.isPlaceholder ? (
+      <div class="placeholder-notice">
+        <p>🚧 This thought is still germinating. The content above is a placeholder.</p>
+      </div>
+    ) : null}
+
+    <article class="thought-content">
+      <Content />
+    </article>
+
+    {(relatedThoughts.length > 0 || inboundLinks.length > 0) && (
+      <aside class="connections">
+        <h2>Connections</h2>
+
+        {relatedThoughts.length > 0 && (
+          <section class="related-thoughts">
+            <h3>Related Thoughts →</h3>
+            <ul>
+              {relatedThoughts.map(related => related && (
+                <li class:list={['thought-link', { placeholder: related.data.isPlaceholder }]}>
+                  <a href={`/thoughts/${related.slug}`}>
+                    <span class="emoji">{maturityEmoji[related.data.maturity]}</span>
+                    <span class="title">{related.data.title}</span>
+                    {related.data.isPlaceholder && <span class="badge">Coming soon</span>}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {inboundLinks.length > 0 && (
+          <section class="inbound-links">
+            <h3>← Referenced by</h3>
+            <ul>
+              {inboundLinks.map(inbound => (
+                <li class="thought-link">
+                  <a href={`/thoughts/${inbound.slug}`}>
+                    <span class="emoji">{maturityEmoji[inbound.data.maturity]}</span>
+                    <span class="title">{inbound.data.title}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+      </aside>
+    )}
+  </main>
+</body>
+</html>
+
+<style>
+  :root {
+    --color-bg: #fafaf9;
+    --color-text: #1c1917;
+    --color-text-muted: #57534e;
+    --color-border: #e7e5e4;
+    --color-accent: #0891b2;
+    --color-sprout: #84cc16;
+    --color-growing: #22c55e;
+    --color-evergreen: #059669;
+    --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+    --font-mono: 'SF Mono', 'Monaco', 'Cascadia Code', monospace;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background: var(--color-bg);
+    color: var(--color-text);
+    line-height: 1.7;
+    padding: 2rem 1rem;
+  }
+
+  .nav {
+    max-width: 800px;
+    margin: 0 auto 2rem;
+  }
+
+  .nav a {
+    color: var(--color-text-muted);
+    text-decoration: none;
+    font-size: 0.95rem;
+    transition: color 0.2s;
+  }
+
+  .nav a:hover {
+    color: var(--color-accent);
+  }
+
+  .container {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .thought-header {
+    margin-bottom: 3rem;
+  }
+
+  .maturity-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 2rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin-bottom: 1.5rem;
+    border: 2px solid;
+  }
+
+  .maturity-badge[data-maturity="sprout"] {
+    background: #ecfccb;
+    border-color: var(--color-sprout);
+    color: #365314;
+  }
+
+  .maturity-badge[data-maturity="growing"] {
+    background: #dcfce7;
+    border-color: var(--color-growing);
+    color: #14532d;
+  }
+
+  .maturity-badge[data-maturity="evergreen"] {
+    background: #d1fae5;
+    border-color: var(--color-evergreen);
+    color: #064e3b;
+  }
+
+  h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    line-height: 1.2;
+  }
+
+  .summary {
+    font-size: 1.25rem;
+    color: var(--color-text-muted);
+    margin-bottom: 1rem;
+  }
+
+  .meta {
+    display: flex;
+    gap: 1.5rem;
+    font-size: 0.9rem;
+    color: var(--color-text-muted);
+    margin-bottom: 1rem;
+  }
+
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .tag {
+    background: var(--color-border);
+    padding: 0.25rem 0.75rem;
+    border-radius: 0.5rem;
+    font-size: 0.85rem;
+    font-family: var(--font-mono);
+  }
+
+  .placeholder-notice {
+    background: #fef3c7;
+    border: 2px solid #fbbf24;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 2rem;
+    color: #78350f;
+  }
+
+  .thought-content {
+    margin-bottom: 3rem;
+  }
+
+  .thought-content :global(h2) {
+    font-size: 1.75rem;
+    margin: 2rem 0 1rem;
+  }
+
+  .thought-content :global(h3) {
+    font-size: 1.25rem;
+    margin: 1.5rem 0 0.75rem;
+  }
+
+  .thought-content :global(p) {
+    margin-bottom: 1rem;
+  }
+
+  .thought-content :global(strong) {
+    font-weight: 600;
+    color: var(--color-text);
+  }
+
+  .thought-content :global(ul),
+  .thought-content :global(ol) {
+    margin-left: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .thought-content :global(li) {
+    margin-bottom: 0.5rem;
+  }
+
+  .thought-content :global(code) {
+    font-family: var(--font-mono);
+    background: var(--color-border);
+    padding: 0.2rem 0.4rem;
+    border-radius: 0.25rem;
+    font-size: 0.9em;
+  }
+
+  .connections {
+    border-top: 2px solid var(--color-border);
+    padding-top: 2rem;
+  }
+
+  .connections h2 {
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .connections h3 {
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-muted);
+    margin-bottom: 0.75rem;
+  }
+
+  .connections section {
+    margin-bottom: 2rem;
+  }
+
+  .connections ul {
+    list-style: none;
+  }
+
+  .thought-link {
+    margin-bottom: 0.75rem;
+  }
+
+  .thought-link a {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    text-decoration: none;
+    color: var(--color-text);
+    transition: background 0.2s;
+  }
+
+  .thought-link a:hover {
+    background: var(--color-border);
+  }
+
+  .thought-link.placeholder a {
+    opacity: 0.6;
+  }
+
+  .thought-link .title {
+    flex: 1;
+  }
+
+  .thought-link .badge {
+    font-size: 0.75rem;
+    background: var(--color-border);
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-family: var(--font-mono);
+  }
+</style>

@@ -1,0 +1,555 @@
+---
+import { getCollection } from 'astro:content';
+
+const allThoughts = await getCollection('thoughts');
+
+// Group thoughts by maturity
+const thoughtsByMaturity = {
+  evergreen: allThoughts.filter(t => t.data.maturity === 'evergreen'),
+  growing: allThoughts.filter(t => t.data.maturity === 'growing'),
+  sprout: allThoughts.filter(t => t.data.maturity === 'sprout'),
+};
+
+// Sort by updated date
+const recentThoughts = [...allThoughts]
+  .sort((a, b) => b.data.updatedAt.getTime() - a.data.updatedAt.getTime())
+  .slice(0, 5);
+
+// Get all unique tags
+const allTags = [...new Set(allThoughts.flatMap(t => t.data.tags || []))];
+
+const maturityEmoji = {
+  sprout: '🌱',
+  growing: '🌿',
+  evergreen: '🌳',
+};
+
+const maturityLabel = {
+  sprout: 'Sprout',
+  growing: 'Growing',
+  evergreen: 'Evergreen',
+};
+
+const maturityDescription = {
+  sprout: 'Early ideas and explorations',
+  growing: 'Developing thoughts with some depth',
+  evergreen: 'Mature, well-developed concepts',
+};
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nightwing Haven - A Digital Garden</title>
+  <meta name="description" content="Thoughts on building software with AI">
+</head>
+<body>
+  <main class="container">
+    <header class="garden-header">
+      <h1>🌿 Nightwing Haven</h1>
+      <p class="tagline">A digital garden exploring how AI transforms software development</p>
+      <p class="intro">
+        Welcome to my thinking space. Here you'll find thoughts at various stages of development—from
+        early sprouts to evergreen ideas—all exploring the intersection of AI and software engineering.
+      </p>
+    </header>
+
+    <div class="view-switcher">
+      <button class="view-btn active" data-view="maturity">By Maturity</button>
+      <button class="view-btn" data-view="recent">Recent Updates</button>
+      <button class="view-btn" data-view="all">All Thoughts</button>
+      <button class="view-btn" data-view="table">Table View</button>
+    </div>
+
+    <!-- By Maturity View -->
+    <section class="view active" data-view="maturity">
+      {Object.entries(thoughtsByMaturity).reverse().map(([maturity, thoughts]) => (
+        thoughts.length > 0 && (
+          <div class="maturity-section">
+            <div class="maturity-header">
+              <h2>
+                <span class="emoji">{maturityEmoji[maturity as keyof typeof maturityEmoji]}</span>
+                {maturityLabel[maturity as keyof typeof maturityLabel]}
+              </h2>
+              <p class="maturity-desc">{maturityDescription[maturity as keyof typeof maturityDescription]}</p>
+            </div>
+            <div class="thought-grid">
+              {thoughts.map(thought => (
+                <a href={`/thoughts/${thought.slug}`} class="thought-card" data-placeholder={thought.data.isPlaceholder}>
+                  <h3>{thought.data.title}</h3>
+                  <p class="summary">{thought.data.summary}</p>
+                  {thought.data.isPlaceholder && (
+                    <span class="placeholder-badge">Coming soon</span>
+                  )}
+                  {thought.data.tags && thought.data.tags.length > 0 && (
+                    <div class="tags">
+                      {thought.data.tags.slice(0, 3).map(tag => (
+                        <span class="tag">{tag}</span>
+                      ))}
+                    </div>
+                  )}
+                </a>
+              ))}
+            </div>
+          </div>
+        )
+      ))}
+    </section>
+
+    <!-- Recent Updates View -->
+    <section class="view" data-view="recent">
+      <h2>Recently Updated</h2>
+      <div class="thought-list">
+        {recentThoughts.map(thought => (
+          <a href={`/thoughts/${thought.slug}`} class="thought-list-item" data-placeholder={thought.data.isPlaceholder}>
+            <div class="list-item-header">
+              <span class="emoji">{maturityEmoji[thought.data.maturity]}</span>
+              <h3>{thought.data.title}</h3>
+            </div>
+            <p class="summary">{thought.data.summary}</p>
+            <div class="list-item-meta">
+              <time>
+                {thought.data.updatedAt.toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric'
+                })}
+              </time>
+              {thought.data.isPlaceholder && (
+                <span class="placeholder-badge">Coming soon</span>
+              )}
+            </div>
+          </a>
+        ))}
+      </div>
+    </section>
+
+    <!-- All Thoughts View -->
+    <section class="view" data-view="all">
+      <h2>All Thoughts</h2>
+      <div class="thought-list">
+        {allThoughts.map(thought => (
+          <a href={`/thoughts/${thought.slug}`} class="thought-list-item" data-placeholder={thought.data.isPlaceholder}>
+            <div class="list-item-header">
+              <span class="emoji">{maturityEmoji[thought.data.maturity]}</span>
+              <h3>{thought.data.title}</h3>
+            </div>
+            <p class="summary">{thought.data.summary}</p>
+            {thought.data.isPlaceholder && (
+              <span class="placeholder-badge">Coming soon</span>
+            )}
+          </a>
+        ))}
+      </div>
+    </section>
+
+    <!-- Table View -->
+    <section class="view" data-view="table">
+      <h2>Table View</h2>
+      <div class="table-wrapper">
+        <table class="thought-table">
+          <thead>
+            <tr>
+              <th>Status</th>
+              <th>Title</th>
+              <th>Tags</th>
+              <th>Updated</th>
+            </tr>
+          </thead>
+          <tbody>
+            {allThoughts.map(thought => (
+              <tr data-placeholder={thought.data.isPlaceholder}>
+                <td class="maturity-cell">
+                  <span class="emoji">{maturityEmoji[thought.data.maturity]}</span>
+                </td>
+                <td class="title-cell">
+                  <a href={`/thoughts/${thought.slug}`}>
+                    {thought.data.title}
+                    {thought.data.isPlaceholder && (
+                      <span class="placeholder-badge">Coming soon</span>
+                    )}
+                  </a>
+                </td>
+                <td class="tags-cell">
+                  {thought.data.tags && thought.data.tags.length > 0 && (
+                    <div class="tags">
+                      {thought.data.tags.map(tag => (
+                        <span class="tag">{tag}</span>
+                      ))}
+                    </div>
+                  )}
+                </td>
+                <td class="date-cell">
+                  <time>
+                    {thought.data.updatedAt.toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric'
+                    })}
+                  </time>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <footer class="garden-footer">
+      <p>
+        This is a digital garden—a living collection of thoughts that grow and evolve over time.
+        Some ideas are fully formed 🌳, others are still sprouting 🌱.
+      </p>
+    </footer>
+  </main>
+
+  <script>
+    // View switching functionality
+    const viewButtons = document.querySelectorAll('.view-btn');
+    const views = document.querySelectorAll('.view');
+
+    viewButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        const targetView = button.getAttribute('data-view');
+
+        // Update active button
+        viewButtons.forEach(btn => btn.classList.remove('active'));
+        button.classList.add('active');
+
+        // Update active view
+        views.forEach(view => {
+          if (view.getAttribute('data-view') === targetView) {
+            view.classList.add('active');
+          } else {
+            view.classList.remove('active');
+          }
+        });
+      });
+    });
+  </script>
+</body>
+</html>
+
+<style>
+  :root {
+    --color-bg: #fafaf9;
+    --color-text: #1c1917;
+    --color-text-muted: #57534e;
+    --color-border: #e7e5e4;
+    --color-accent: #0891b2;
+    --color-sprout: #84cc16;
+    --color-growing: #22c55e;
+    --color-evergreen: #059669;
+    --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+    --font-mono: 'SF Mono', 'Monaco', 'Cascadia Code', monospace;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background: var(--color-bg);
+    color: var(--color-text);
+    line-height: 1.7;
+    padding: 2rem 1rem;
+  }
+
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .garden-header {
+    text-align: center;
+    margin-bottom: 3rem;
+    padding-bottom: 2rem;
+    border-bottom: 2px solid var(--color-border);
+  }
+
+  .garden-header h1 {
+    font-size: 3rem;
+    margin-bottom: 0.5rem;
+    font-weight: 700;
+  }
+
+  .tagline {
+    font-size: 1.25rem;
+    color: var(--color-text-muted);
+    margin-bottom: 1rem;
+  }
+
+  .intro {
+    max-width: 700px;
+    margin: 0 auto;
+    color: var(--color-text-muted);
+  }
+
+  .view-switcher {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .view-btn {
+    padding: 0.75rem 1.5rem;
+    border: 2px solid var(--color-border);
+    background: white;
+    color: var(--color-text);
+    border-radius: 0.5rem;
+    cursor: pointer;
+    font-family: var(--font-sans);
+    font-size: 0.95rem;
+    font-weight: 500;
+    transition: all 0.2s;
+  }
+
+  .view-btn:hover {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+  }
+
+  .view-btn.active {
+    background: var(--color-accent);
+    border-color: var(--color-accent);
+    color: white;
+  }
+
+  .view {
+    display: none;
+  }
+
+  .view.active {
+    display: block;
+  }
+
+  .maturity-section {
+    margin-bottom: 3rem;
+  }
+
+  .maturity-header {
+    margin-bottom: 1.5rem;
+  }
+
+  .maturity-header h2 {
+    font-size: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .maturity-desc {
+    color: var(--color-text-muted);
+    font-size: 0.95rem;
+  }
+
+  .thought-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .thought-card {
+    display: block;
+    padding: 1.5rem;
+    border: 2px solid var(--color-border);
+    border-radius: 0.75rem;
+    text-decoration: none;
+    color: var(--color-text);
+    transition: all 0.2s;
+    background: white;
+  }
+
+  .thought-card:hover {
+    border-color: var(--color-accent);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  }
+
+  .thought-card[data-placeholder="true"] {
+    opacity: 0.7;
+    border-style: dashed;
+  }
+
+  .thought-card h3 {
+    font-size: 1.25rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .thought-card .summary {
+    color: var(--color-text-muted);
+    font-size: 0.95rem;
+    margin-bottom: 1rem;
+  }
+
+  .placeholder-badge {
+    display: inline-block;
+    background: #fef3c7;
+    color: #78350f;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    font-family: var(--font-mono);
+    margin-bottom: 0.5rem;
+  }
+
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .tag {
+    background: var(--color-border);
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    font-family: var(--font-mono);
+  }
+
+  .thought-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .thought-list-item {
+    display: block;
+    padding: 1.5rem;
+    border: 2px solid var(--color-border);
+    border-radius: 0.75rem;
+    text-decoration: none;
+    color: var(--color-text);
+    transition: all 0.2s;
+    background: white;
+  }
+
+  .thought-list-item:hover {
+    border-color: var(--color-accent);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+
+  .thought-list-item[data-placeholder="true"] {
+    opacity: 0.7;
+    border-style: dashed;
+  }
+
+  .list-item-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .list-item-header h3 {
+    font-size: 1.25rem;
+  }
+
+  .list-item-meta {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 0.75rem;
+    font-size: 0.9rem;
+    color: var(--color-text-muted);
+  }
+
+  .table-wrapper {
+    overflow-x: auto;
+  }
+
+  .thought-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border: 2px solid var(--color-border);
+    border-radius: 0.75rem;
+  }
+
+  .thought-table thead {
+    background: #f5f5f4;
+  }
+
+  .thought-table th {
+    padding: 1rem;
+    text-align: left;
+    font-weight: 600;
+    border-bottom: 2px solid var(--color-border);
+  }
+
+  .thought-table td {
+    padding: 1rem;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .thought-table tr:last-child td {
+    border-bottom: none;
+  }
+
+  .thought-table tr:hover {
+    background: #fafaf9;
+  }
+
+  .thought-table tr[data-placeholder="true"] {
+    opacity: 0.7;
+  }
+
+  .maturity-cell {
+    width: 60px;
+    text-align: center;
+  }
+
+  .title-cell a {
+    color: var(--color-text);
+    text-decoration: none;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .title-cell a:hover {
+    color: var(--color-accent);
+  }
+
+  .tags-cell .tags {
+    gap: 0.25rem;
+  }
+
+  .date-cell {
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+    white-space: nowrap;
+  }
+
+  .emoji {
+    font-size: 1.5em;
+    line-height: 1;
+  }
+
+  .garden-footer {
+    margin-top: 4rem;
+    padding-top: 2rem;
+    border-top: 2px solid var(--color-border);
+    text-align: center;
+    color: var(--color-text-muted);
+  }
+
+  @media (max-width: 768px) {
+    .garden-header h1 {
+      font-size: 2rem;
+    }
+
+    .thought-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
