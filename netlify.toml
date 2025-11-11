@@ -3,12 +3,3 @@
 [build]
   command = "npm run build"
   publish = "dist"
-
-[[plugins]]
-  package = "@astrojs/netlify"
-
-# Redirect rules for clean URLs
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 404
