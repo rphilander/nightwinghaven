@@ -3,37 +3,16 @@ import { getCollection } from 'astro:content';
 
 const allThoughts = await getCollection('thoughts');
 
-// Group thoughts by maturity
-const thoughtsByMaturity = {
-  evergreen: allThoughts.filter(t => t.data.maturity === 'evergreen'),
-  growing: allThoughts.filter(t => t.data.maturity === 'growing'),
-  sprout: allThoughts.filter(t => t.data.maturity === 'sprout'),
-};
-
-// Sort by updated date
-const recentThoughts = [...allThoughts]
-  .sort((a, b) => b.data.updatedAt.getTime() - a.data.updatedAt.getTime())
-  .slice(0, 5);
-
-// Get all unique tags
-const allTags = [...new Set(allThoughts.flatMap(t => t.data.tags || []))];
+// Sort by title alphabetically by default
+const sortedThoughts = [...allThoughts].sort((a, b) =>
+  a.data.title.localeCompare(b.data.title)
+);
 
 const maturityEmoji = {
+  seed: '🌰',
   sprout: '🌱',
   growing: '🌿',
   evergreen: '🌳',
-};
-
-const maturityLabel = {
-  sprout: 'Sprout',
-  growing: 'Growing',
-  evergreen: 'Evergreen',
-};
-
-const maturityDescription = {
-  sprout: 'Early ideas and explorations',
-  growing: 'Developing thoughts with some depth',
-  evergreen: 'Mature, well-developed concepts',
 };
 ---
 
@@ -49,199 +28,159 @@ const maturityDescription = {
   <main class="container">
     <header class="garden-header">
       <h1>🌿 Nightwing Haven</h1>
-      <p class="tagline">A digital garden exploring how AI transforms software development</p>
+      <p class="tagline">"We live in a twilight world."</p>
       <p class="intro">
-        Welcome to my thinking space. Here you'll find thoughts at various stages of development—from
-        early sprouts to evergreen ideas—all exploring the intersection of AI and software engineering.
+        A <a href="/thoughts/digital-garden">digital garden</a> is a living collection of interconnected thoughts that grow and evolve over time.
+        <a href="/thoughts/nightwing-haven">Nightwing Haven</a> is my digital garden for exploring how AI transforms software development—from early experiments to mature insights.
       </p>
     </header>
 
-    <div class="view-switcher">
-      <button class="view-btn active" data-view="maturity">By Maturity</button>
-      <button class="view-btn" data-view="recent">Recent Updates</button>
-      <button class="view-btn" data-view="all">All Thoughts</button>
-      <button class="view-btn" data-view="table">Table View</button>
+    <div class="controls">
+      <div class="filter-buttons">
+        <button class="filter-btn active" data-filter="all">All</button>
+        <button class="filter-btn" data-filter="seed">🌰 Seed</button>
+        <button class="filter-btn" data-filter="sprout">🌱 Sprout</button>
+        <button class="filter-btn" data-filter="growing">🌿 Growing</button>
+        <button class="filter-btn" data-filter="evergreen">🌳 Evergreen</button>
+      </div>
+      <div class="sort-buttons">
+        <button class="sort-btn active" data-sort="title">Sort: Title</button>
+        <button class="sort-btn" data-sort="updated">Sort: Updated</button>
+      </div>
     </div>
 
-    <!-- By Maturity View -->
-    <section class="view active" data-view="maturity">
-      {Object.entries(thoughtsByMaturity).reverse().map(([maturity, thoughts]) => (
-        thoughts.length > 0 && (
-          <div class="maturity-section">
-            <div class="maturity-header">
-              <h2>
-                <span class="emoji">{maturityEmoji[maturity as keyof typeof maturityEmoji]}</span>
-                {maturityLabel[maturity as keyof typeof maturityLabel]}
-              </h2>
-              <p class="maturity-desc">{maturityDescription[maturity as keyof typeof maturityDescription]}</p>
-            </div>
-            <div class="thought-grid">
-              {thoughts.map(thought => (
-                <a href={`/thoughts/${thought.slug}`} class="thought-card" data-placeholder={thought.data.isPlaceholder}>
-                  <h3>{thought.data.title}</h3>
-                  <p class="summary">{thought.data.summary}</p>
-                  {thought.data.isPlaceholder && (
-                    <span class="placeholder-badge">Coming soon</span>
-                  )}
-                  {thought.data.tags && thought.data.tags.length > 0 && (
-                    <div class="tags">
-                      {thought.data.tags.slice(0, 3).map(tag => (
-                        <span class="tag">{tag}</span>
-                      ))}
-                    </div>
-                  )}
+    <div class="table-wrapper">
+      <table class="thought-table">
+        <thead>
+          <tr>
+            <th class="maturity-col">Status</th>
+            <th class="title-col">Title</th>
+            <th class="summary-col">Summary</th>
+            <th class="tags-col">Tags</th>
+            <th class="date-col">Updated</th>
+          </tr>
+        </thead>
+        <tbody id="thoughts-tbody">
+          {sortedThoughts.map(thought => (
+            <tr data-maturity={thought.data.maturity} data-updated={thought.data.updatedAt.getTime()} data-title={thought.data.title}>
+              <td class="maturity-cell">
+                <span class="emoji">{maturityEmoji[thought.data.maturity]}</span>
+              </td>
+              <td class="title-cell">
+                <a href={`/thoughts/${thought.slug}`}>
+                  {thought.data.title}
                 </a>
-              ))}
-            </div>
-          </div>
-        )
-      ))}
-    </section>
-
-    <!-- Recent Updates View -->
-    <section class="view" data-view="recent">
-      <h2>Recently Updated</h2>
-      <div class="thought-list">
-        {recentThoughts.map(thought => (
-          <a href={`/thoughts/${thought.slug}`} class="thought-list-item" data-placeholder={thought.data.isPlaceholder}>
-            <div class="list-item-header">
-              <span class="emoji">{maturityEmoji[thought.data.maturity]}</span>
-              <h3>{thought.data.title}</h3>
-            </div>
-            <p class="summary">{thought.data.summary}</p>
-            <div class="list-item-meta">
-              <time>
-                {thought.data.updatedAt.toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'short',
-                  day: 'numeric'
-                })}
-              </time>
-              {thought.data.isPlaceholder && (
-                <span class="placeholder-badge">Coming soon</span>
-              )}
-            </div>
-          </a>
-        ))}
-      </div>
-    </section>
-
-    <!-- All Thoughts View -->
-    <section class="view" data-view="all">
-      <h2>All Thoughts</h2>
-      <div class="thought-list">
-        {allThoughts.map(thought => (
-          <a href={`/thoughts/${thought.slug}`} class="thought-list-item" data-placeholder={thought.data.isPlaceholder}>
-            <div class="list-item-header">
-              <span class="emoji">{maturityEmoji[thought.data.maturity]}</span>
-              <h3>{thought.data.title}</h3>
-            </div>
-            <p class="summary">{thought.data.summary}</p>
-            {thought.data.isPlaceholder && (
-              <span class="placeholder-badge">Coming soon</span>
-            )}
-          </a>
-        ))}
-      </div>
-    </section>
-
-    <!-- Table View -->
-    <section class="view" data-view="table">
-      <h2>Table View</h2>
-      <div class="table-wrapper">
-        <table class="thought-table">
-          <thead>
-            <tr>
-              <th>Status</th>
-              <th>Title</th>
-              <th>Tags</th>
-              <th>Updated</th>
+              </td>
+              <td class="summary-cell">
+                {thought.data.summary}
+              </td>
+              <td class="tags-cell">
+                {thought.data.tags && thought.data.tags.length > 0 && (
+                  <div class="tags">
+                    {thought.data.tags.map(tag => (
+                      <span class="tag">{tag}</span>
+                    ))}
+                  </div>
+                )}
+              </td>
+              <td class="date-cell">
+                <time>
+                  {thought.data.updatedAt.toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                  })}
+                </time>
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            {allThoughts.map(thought => (
-              <tr data-placeholder={thought.data.isPlaceholder}>
-                <td class="maturity-cell">
-                  <span class="emoji">{maturityEmoji[thought.data.maturity]}</span>
-                </td>
-                <td class="title-cell">
-                  <a href={`/thoughts/${thought.slug}`}>
-                    {thought.data.title}
-                    {thought.data.isPlaceholder && (
-                      <span class="placeholder-badge">Coming soon</span>
-                    )}
-                  </a>
-                </td>
-                <td class="tags-cell">
-                  {thought.data.tags && thought.data.tags.length > 0 && (
-                    <div class="tags">
-                      {thought.data.tags.map(tag => (
-                        <span class="tag">{tag}</span>
-                      ))}
-                    </div>
-                  )}
-                </td>
-                <td class="date-cell">
-                  <time>
-                    {thought.data.updatedAt.toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'short',
-                      day: 'numeric'
-                    })}
-                  </time>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </section>
+          ))}
+        </tbody>
+      </table>
+    </div>
 
     <footer class="garden-footer">
-      <p>
-        This is a digital garden—a living collection of thoughts that grow and evolve over time.
-        Some ideas are fully formed 🌳, others are still sprouting 🌱.
-      </p>
+      <p>"And we make no friends at dusk."</p>
     </footer>
   </main>
 
   <script>
-    // View switching functionality
-    const viewButtons = document.querySelectorAll('.view-btn');
-    const views = document.querySelectorAll('.view');
+    // Filter and sort functionality
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    const sortButtons = document.querySelectorAll('.sort-btn');
+    const tbody = document.getElementById('thoughts-tbody');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
 
-    viewButtons.forEach(button => {
+    let currentFilter = 'all';
+    let currentSort = 'title';
+
+    // Filter buttons
+    filterButtons.forEach(button => {
       button.addEventListener('click', () => {
-        const targetView = button.getAttribute('data-view');
-
-        // Update active button
-        viewButtons.forEach(btn => btn.classList.remove('active'));
+        currentFilter = button.getAttribute('data-filter');
+        filterButtons.forEach(btn => btn.classList.remove('active'));
         button.classList.add('active');
-
-        // Update active view
-        views.forEach(view => {
-          if (view.getAttribute('data-view') === targetView) {
-            view.classList.add('active');
-          } else {
-            view.classList.remove('active');
-          }
-        });
+        applyFilterAndSort();
       });
     });
+
+    // Sort buttons
+    sortButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        currentSort = button.getAttribute('data-sort');
+        sortButtons.forEach(btn => btn.classList.remove('active'));
+        button.classList.add('active');
+        applyFilterAndSort();
+      });
+    });
+
+    function applyFilterAndSort() {
+      // Filter rows
+      let filteredRows = rows.filter(row => {
+        if (currentFilter === 'all') return true;
+        return row.getAttribute('data-maturity') === currentFilter;
+      });
+
+      // Sort rows
+      filteredRows.sort((a, b) => {
+        if (currentSort === 'title') {
+          return a.getAttribute('data-title').localeCompare(b.getAttribute('data-title'));
+        } else if (currentSort === 'updated') {
+          return parseInt(b.getAttribute('data-updated')) - parseInt(a.getAttribute('data-updated'));
+        }
+        return 0;
+      });
+
+      // Clear tbody
+      tbody.innerHTML = '';
+
+      // Re-append sorted and filtered rows
+      filteredRows.forEach(row => tbody.appendChild(row));
+
+      // Hide filtered out rows
+      rows.forEach(row => {
+        if (filteredRows.includes(row)) {
+          row.style.display = '';
+        } else {
+          row.style.display = 'none';
+        }
+      });
+    }
   </script>
 </body>
 </html>
 
 <style>
   :root {
-    --color-bg: #fafaf9;
-    --color-text: #1c1917;
-    --color-text-muted: #57534e;
-    --color-border: #e7e5e4;
-    --color-accent: #0891b2;
-    --color-sprout: #84cc16;
-    --color-growing: #22c55e;
-    --color-evergreen: #059669;
+    --color-bg: #3c3836;
+    --color-text: #f9f5d7;
+    --color-text-muted: #d5c4a1;
+    --color-border: #504945;
+    --color-accent: #22d3ee;
+    --color-card-bg: #32302f;
+    --color-seed: #d4a574;
+    --color-sprout: #b8bb26;
+    --color-growing: #8ec07c;
+    --color-evergreen: #689d6a;
     --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
     --font-mono: 'SF Mono', 'Monaco', 'Cascadia Code', monospace;
   }
@@ -290,121 +229,63 @@ const maturityDescription = {
     color: var(--color-text-muted);
   }
 
-  .view-switcher {
-    display: flex;
-    gap: 0.5rem;
-    margin-bottom: 2rem;
-    flex-wrap: wrap;
-    justify-content: center;
+  .intro a {
+    color: var(--color-accent);
+    text-decoration: none;
+    border-bottom: 1px solid var(--color-accent);
+    transition: opacity 0.2s;
   }
 
-  .view-btn {
-    padding: 0.75rem 1.5rem;
+  .intro a:hover {
+    opacity: 0.7;
+  }
+
+  .controls {
+    display: flex;
+    gap: 2rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .filter-buttons,
+  .sort-buttons {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .filter-btn,
+  .sort-btn {
+    padding: 0.5rem 1rem;
     border: 2px solid var(--color-border);
-    background: white;
+    background: var(--color-card-bg);
     color: var(--color-text);
     border-radius: 0.5rem;
     cursor: pointer;
     font-family: var(--font-sans);
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     font-weight: 500;
     transition: all 0.2s;
   }
 
-  .view-btn:hover {
+  .filter-btn:hover,
+  .sort-btn:hover {
     border-color: var(--color-accent);
     color: var(--color-accent);
   }
 
-  .view-btn.active {
+  .filter-btn.active,
+  .sort-btn.active {
     background: var(--color-accent);
     border-color: var(--color-accent);
-    color: white;
-  }
-
-  .view {
-    display: none;
-  }
-
-  .view.active {
-    display: block;
-  }
-
-  .maturity-section {
-    margin-bottom: 3rem;
-  }
-
-  .maturity-header {
-    margin-bottom: 1.5rem;
-  }
-
-  .maturity-header h2 {
-    font-size: 2rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 0.5rem;
-  }
-
-  .maturity-desc {
-    color: var(--color-text-muted);
-    font-size: 0.95rem;
-  }
-
-  .thought-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 1.5rem;
-  }
-
-  .thought-card {
-    display: block;
-    padding: 1.5rem;
-    border: 2px solid var(--color-border);
-    border-radius: 0.75rem;
-    text-decoration: none;
-    color: var(--color-text);
-    transition: all 0.2s;
-    background: white;
-  }
-
-  .thought-card:hover {
-    border-color: var(--color-accent);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  }
-
-  .thought-card[data-placeholder="true"] {
-    opacity: 0.7;
-    border-style: dashed;
-  }
-
-  .thought-card h3 {
-    font-size: 1.25rem;
-    margin-bottom: 0.75rem;
-  }
-
-  .thought-card .summary {
-    color: var(--color-text-muted);
-    font-size: 0.95rem;
-    margin-bottom: 1rem;
-  }
-
-  .placeholder-badge {
-    display: inline-block;
-    background: #fef3c7;
-    color: #78350f;
-    padding: 0.25rem 0.5rem;
-    border-radius: 0.25rem;
-    font-size: 0.75rem;
-    font-family: var(--font-mono);
-    margin-bottom: 0.5rem;
+    color: var(--color-bg);
   }
 
   .tags {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem;
+    gap: 0.25rem;
   }
 
   .tag {
@@ -415,53 +296,6 @@ const maturityDescription = {
     font-family: var(--font-mono);
   }
 
-  .thought-list {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .thought-list-item {
-    display: block;
-    padding: 1.5rem;
-    border: 2px solid var(--color-border);
-    border-radius: 0.75rem;
-    text-decoration: none;
-    color: var(--color-text);
-    transition: all 0.2s;
-    background: white;
-  }
-
-  .thought-list-item:hover {
-    border-color: var(--color-accent);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  }
-
-  .thought-list-item[data-placeholder="true"] {
-    opacity: 0.7;
-    border-style: dashed;
-  }
-
-  .list-item-header {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 0.75rem;
-  }
-
-  .list-item-header h3 {
-    font-size: 1.25rem;
-  }
-
-  .list-item-meta {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    margin-top: 0.75rem;
-    font-size: 0.9rem;
-    color: var(--color-text-muted);
-  }
-
   .table-wrapper {
     overflow-x: auto;
   }
@@ -469,13 +303,13 @@ const maturityDescription = {
   .thought-table {
     width: 100%;
     border-collapse: collapse;
-    background: white;
+    background: var(--color-card-bg);
     border: 2px solid var(--color-border);
     border-radius: 0.75rem;
   }
 
   .thought-table thead {
-    background: #f5f5f4;
+    background: #282625;
   }
 
   .thought-table th {
@@ -495,15 +329,34 @@ const maturityDescription = {
   }
 
   .thought-table tr:hover {
-    background: #fafaf9;
+    background: #3a3735;
   }
 
   .thought-table tr[data-placeholder="true"] {
     opacity: 0.7;
   }
 
+  .maturity-col {
+    width: 70px;
+  }
+
+  .title-col {
+    width: 20%;
+  }
+
+  .summary-col {
+    width: 40%;
+  }
+
+  .tags-col {
+    width: 20%;
+  }
+
+  .date-col {
+    width: 15%;
+  }
+
   .maturity-cell {
-    width: 60px;
     text-align: center;
   }
 
@@ -511,13 +364,15 @@ const maturityDescription = {
     color: var(--color-text);
     text-decoration: none;
     font-weight: 500;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
   }
 
   .title-cell a:hover {
     color: var(--color-accent);
+  }
+
+  .summary-cell {
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
   }
 
   .tags-cell .tags {
@@ -548,8 +403,18 @@ const maturityDescription = {
       font-size: 2rem;
     }
 
-    .thought-grid {
-      grid-template-columns: 1fr;
+    .controls {
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .summary-col,
+    .tags-col {
+      display: none;
+    }
+
+    .title-col {
+      width: auto;
     }
   }
 </style>

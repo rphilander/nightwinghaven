@@ -32,12 +32,14 @@ const inboundLinks = allThoughts.filter(t =>
 
 // Maturity emoji mapping
 const maturityEmoji = {
+  seed: '🌰',
   sprout: '🌱',
   growing: '🌿',
   evergreen: '🌳',
 };
 
 const maturityLabel = {
+  seed: 'Seed',
   sprout: 'Sprout',
   growing: 'Growing',
   evergreen: 'Evergreen',
@@ -96,12 +98,6 @@ const maturityLabel = {
       )}
     </header>
 
-    {thought.data.isPlaceholder ? (
-      <div class="placeholder-notice">
-        <p>🚧 This thought is still germinating. The content above is a placeholder.</p>
-      </div>
-    ) : null}
-
     <article class="thought-content">
       <Content />
     </article>
@@ -115,11 +111,10 @@ const maturityLabel = {
             <h3>Related Thoughts →</h3>
             <ul>
               {relatedThoughts.map(related => related && (
-                <li class:list={['thought-link', { placeholder: related.data.isPlaceholder }]}>
+                <li class="thought-link">
                   <a href={`/thoughts/${related.slug}`}>
                     <span class="emoji">{maturityEmoji[related.data.maturity]}</span>
                     <span class="title">{related.data.title}</span>
-                    {related.data.isPlaceholder && <span class="badge">Coming soon</span>}
                   </a>
                 </li>
               ))}
@@ -150,14 +145,16 @@ const maturityLabel = {
 
 <style>
   :root {
-    --color-bg: #fafaf9;
-    --color-text: #1c1917;
-    --color-text-muted: #57534e;
-    --color-border: #e7e5e4;
-    --color-accent: #0891b2;
-    --color-sprout: #84cc16;
-    --color-growing: #22c55e;
-    --color-evergreen: #059669;
+    --color-bg: #3c3836;
+    --color-text: #f9f5d7;
+    --color-text-muted: #d5c4a1;
+    --color-border: #504945;
+    --color-accent: #22d3ee;
+    --color-card-bg: #32302f;
+    --color-seed: #d4a574;
+    --color-sprout: #b8bb26;
+    --color-growing: #8ec07c;
+    --color-evergreen: #689d6a;
     --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
     --font-mono: 'SF Mono', 'Monaco', 'Cascadia Code', monospace;
   }
@@ -213,22 +210,28 @@ const maturityLabel = {
     border: 2px solid;
   }
 
+  .maturity-badge[data-maturity="seed"] {
+    background: rgba(139, 92, 46, 0.15);
+    border-color: #8b5c2e;
+    color: #d4a574;
+  }
+
   .maturity-badge[data-maturity="sprout"] {
-    background: #ecfccb;
+    background: rgba(184, 187, 38, 0.15);
     border-color: var(--color-sprout);
-    color: #365314;
+    color: var(--color-sprout);
   }
 
   .maturity-badge[data-maturity="growing"] {
-    background: #dcfce7;
+    background: rgba(142, 192, 124, 0.15);
     border-color: var(--color-growing);
-    color: #14532d;
+    color: var(--color-growing);
   }
 
   .maturity-badge[data-maturity="evergreen"] {
-    background: #d1fae5;
+    background: rgba(104, 157, 106, 0.15);
     border-color: var(--color-evergreen);
-    color: #064e3b;
+    color: var(--color-evergreen);
   }
 
   h1 {
@@ -264,15 +267,6 @@ const maturityLabel = {
     border-radius: 0.5rem;
     font-size: 0.85rem;
     font-family: var(--font-mono);
-  }
-
-  .placeholder-notice {
-    background: #fef3c7;
-    border: 2px solid #fbbf24;
-    border-radius: 0.5rem;
-    padding: 1rem;
-    margin-bottom: 2rem;
-    color: #78350f;
   }
 
   .thought-content {
@@ -361,19 +355,7 @@ const maturityLabel = {
     background: var(--color-border);
   }
 
-  .thought-link.placeholder a {
-    opacity: 0.6;
-  }
-
   .thought-link .title {
     flex: 1;
-  }
-
-  .thought-link .badge {
-    font-size: 0.75rem;
-    background: var(--color-border);
-    padding: 0.25rem 0.5rem;
-    border-radius: 0.25rem;
-    font-family: var(--font-mono);
   }
 </style>

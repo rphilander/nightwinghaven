@@ -1,22 +1,27 @@
 # 🌿 Nightwing Haven
 
+*"We live in a twilight world."*
+
 A digital garden exploring the intersection of AI and software development. This is a living collection of thoughts that grow and evolve over time.
+
+Live at: **[twilightworld.ai](https://twilightworld.ai)**
 
 ## About
 
-Nightwing Haven is where I share thoughts about using AI to build software—from early ideas to mature concepts. Each thought follows a maturity model:
+Nightwing Haven is where I share thoughts about using AI to build software—from early ideas to mature concepts. Each thought follows a natural maturity model:
 
+- 🌰 **Seed**: Ideas not yet written, waiting to germinate
 - 🌱 **Sprout**: Early ideas and explorations
 - 🌿 **Growing**: Developing thoughts with some depth
 - 🌳 **Evergreen**: Mature, well-developed concepts
 
 ## Features
 
-- **Multiple Views**: Browse thoughts by maturity, recent updates, all thoughts, or table view
+- **Table View with Filters**: Browse and filter thoughts by maturity stage
+- **Sort Options**: View by title (alphabetical) or most recently updated
 - **Bidirectional Links**: Thoughts reference related ideas with inbound/outbound link tracking
-- **Placeholder Support**: Reference thoughts that haven't been written yet
 - **Stable URLs**: Each thought has a permanent URL for sharing
-- **Clean, Technical Design**: Simple styling with an organic feel
+- **Twilight Theme**: Dark, warm color scheme with technical yet organic styling
 
 ## Project Structure
 
@@ -58,18 +63,18 @@ To add a new thought to the garden:
 ---
 title: "Your Thought Title"
 summary: "A brief summary of your thought"
-maturity: "sprout" # or "growing" or "evergreen"
+maturity: "seed" # seed, sprout, growing, or evergreen
 createdAt: 2025-11-11
 updatedAt: 2025-11-11
 tags: ["tag1", "tag2"]
 relatedThoughts: ["other-thought-slug"] # optional
-isPlaceholder: false # set to true for placeholder thoughts
 ---
 
 Your content here...
 ```
 
 3. The thought will automatically appear on the home page
+4. Start with maturity "seed" for ideas you haven't written yet, then promote as the thought develops
 
 ## Deployment
 
