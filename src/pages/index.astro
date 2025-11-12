@@ -27,7 +27,7 @@ const maturityEmoji = {
 <body>
   <main class="container">
     <header class="garden-header">
-      <h1>Nightwing Haven 🌿</h1>
+      <h1>Nightwing Haven&nbsp;🌿</h1>
       <p class="tagline">We live in a twilight world.</p>
       <p class="intro">
         A <a href="/thoughts/digital-garden">digital garden</a> is a living collection of interconnected thoughts that grow and evolve over time.
@@ -91,7 +91,7 @@ const maturityEmoji = {
     background: var(--color-bg);
     color: var(--color-text);
     line-height: 1.7;
-    padding: 2rem 1rem;
+    padding: 2rem 1.5rem;
   }
 
   .container {
@@ -216,6 +216,10 @@ const maturityEmoji = {
   }
 
   @media (max-width: 768px) {
+    body {
+      padding: 2rem 2rem;
+    }
+
     .garden-header h1 {
       font-size: 3rem;
     }
