@@ -51,7 +51,7 @@ const maturityLabel = {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{thought.data.title} | Nightwing Haven</title>
+  <title>{thought.data.title} | TwilightWorld.ai</title>
   <meta name="description" content={thought.data.summary}>
 </head>
 <body>
@@ -145,12 +145,12 @@ const maturityLabel = {
 
 <style>
   :root {
-    --color-bg: #3c3836;
+    --color-bg: #1e293b;
     --color-text: #f9f5d7;
     --color-text-muted: #d5c4a1;
-    --color-border: #504945;
+    --color-border: #334155;
     --color-accent: #22d3ee;
-    --color-card-bg: #32302f;
+    --color-card-bg: #334155;
     --color-seed: #d4a574;
     --color-sprout: #b8bb26;
     --color-growing: #8ec07c;
@@ -170,12 +170,13 @@ const maturityLabel = {
     background: var(--color-bg);
     color: var(--color-text);
     line-height: 1.7;
-    padding: 2rem 1rem;
+    padding: 2rem 2rem;
   }
 
   .nav {
-    max-width: 800px;
+    max-width: 1200px;
     margin: 0 auto 2rem;
+    padding: 0 1rem;
   }
 
   .nav a {
@@ -190,8 +191,15 @@ const maturityLabel = {
   }
 
   .container {
-    max-width: 800px;
+    max-width: 1200px;
     margin: 0 auto;
+    padding: 0 1rem;
+  }
+
+  .thought-header,
+  .thought-content,
+  .connections {
+    max-width: 800px;
   }
 
   .thought-header {
