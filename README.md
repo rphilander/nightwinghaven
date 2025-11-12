@@ -1,14 +1,14 @@
-# 🌿 Nightwing Haven
+# TwilightWorld.ai
 
-*"We live in a twilight world."*
+*"We live in a twilight world. And we make no friends at dusk."*
 
-A digital garden exploring the intersection of AI and software development. This is a living collection of thoughts that grow and evolve over time.
+The sun of traditional software, and traditional software engineering, is setting. The future's autonomous, thinking systems have arrived. This digital garden is where I share my evolving thoughts on where AI is taking our craft.
 
 Live at: **[twilightworld.ai](https://twilightworld.ai)**
 
 ## About
 
-Nightwing Haven is where I share thoughts about using AI to build software—from early ideas to mature concepts. Each thought follows a natural maturity model:
+TwilightWorld.ai is a digital garden exploring how AI is transforming software engineering. Each thought follows a natural maturity model:
 
 - 🌰 **Seed**: Ideas not yet written, waiting to germinate
 - 🌱 **Sprout**: Early ideas and explorations
@@ -17,11 +17,11 @@ Nightwing Haven is where I share thoughts about using AI to build software—fro
 
 ## Features
 
-- **Table View with Filters**: Browse and filter thoughts by maturity stage
-- **Sort Options**: View by title (alphabetical) or most recently updated
+- **Simple List View**: Clean, minimalist display of thoughts with maturity indicators
+- **Maturity Key**: Visual guide to the growth stages of each thought
 - **Bidirectional Links**: Thoughts reference related ideas with inbound/outbound link tracking
 - **Stable URLs**: Each thought has a permanent URL for sharing
-- **Twilight Theme**: Dark, warm color scheme with technical yet organic styling
+- **Twilight Theme**: Dark blue twilight color scheme with subtle, balanced styling
 
 ## Project Structure
 
@@ -33,7 +33,7 @@ Nightwing Haven is where I share thoughts about using AI to build software—fro
 │   │   ├── config.ts          # Content collections schema
 │   │   └── thoughts/           # MDX thought files
 │   └── pages/
-│       ├── index.astro         # Home page with multiple views
+│       ├── index.astro         # Home page with simple list view
 │       └── thoughts/
 │           └── [...slug].astro # Thought page template
 └── package.json

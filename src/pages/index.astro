@@ -28,10 +28,10 @@ const maturityEmoji = {
   <main class="container">
     <header class="garden-header">
       <h1>TwilightWorld<span class="domain">.ai</span></h1>
-      <p class="tagline">We live in a twilight world. And we make no friends at dusk.</p>
+      <p class="tagline">We live in a twilight world.</p>
+      <p class="tagline">And we make no friends at dusk.</p>
       <p class="intro">
-        A <a href="/thoughts/digital-garden">digital garden</a> is a living collection of interconnected thoughts that grow and evolve over time.
-        This is my digital garden for exploring how AI transforms software development—from early experiments to mature insights.
+        The sun of traditional software, and traditional software engineering, is setting. The future's autonomous, thinking systems have arrived. In this <a href="/thoughts/digital-garden">digital garden</a> I share my evolving thoughts on where AI is taking our craft.
       </p>
     </header>
 
@@ -114,13 +114,18 @@ const maturityEmoji = {
   .tagline {
     font-size: 1.25rem;
     font-style: italic;
-    color: #fb923c;
-    margin-bottom: 1rem;
+    color: #d9915f;
+    margin-bottom: 0.25rem;
+  }
+
+  .tagline:last-of-type {
+    margin-bottom: 1.5rem;
   }
 
   .intro {
     max-width: 700px;
     color: var(--color-text-muted);
+    margin-top: 1.5rem;
   }
 
   .intro a {
