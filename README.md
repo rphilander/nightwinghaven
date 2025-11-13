@@ -2,7 +2,7 @@
 
 *"We live in a twilight world. And we make no friends at dusk."*
 
-The sun of traditional software, and traditional software engineering, is setting. The future's autonomous, thinking systems have arrived. This digital garden is where I share my evolving thoughts on where AI is taking our craft.
+The world of traditional software, and of traditional software engineering, is ending. The autonomous, thinking systems of the future are among us. In this digital garden read my ongoing reflections on building software in the age of AI.
 
 Live at: **[twilightworld.ai](https://twilightworld.ai)**
 
@@ -17,8 +17,9 @@ TwilightWorld.ai is a digital garden exploring how AI is transforming software e
 
 ## Features
 
-- **Simple List View**: Clean, minimalist display of thoughts with maturity indicators
-- **Maturity Key**: Visual guide to the growth stages of each thought
+- **Curated Paths**: Guided narratives that connect related thoughts through the garden
+- **Maturity Model**: Visual indicators showing growth stages (Seed → Sprout → Growing → Evergreen)
+- **Complete Catalog**: Browse all thoughts organized alphabetically
 - **Bidirectional Links**: Thoughts reference related ideas with inbound/outbound link tracking
 - **Stable URLs**: Each thought has a permanent URL for sharing
 - **Twilight Theme**: Dark blue twilight color scheme with subtle, balanced styling
@@ -33,7 +34,7 @@ TwilightWorld.ai is a digital garden exploring how AI is transforming software e
 │   │   ├── config.ts          # Content collections schema
 │   │   └── thoughts/           # MDX thought files
 │   └── pages/
-│       ├── index.astro         # Home page with simple list view
+│       ├── index.astro         # Home page with paths and catalog
 │       └── thoughts/
 │           └── [...slug].astro # Thought page template
 └── package.json
