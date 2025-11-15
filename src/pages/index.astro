@@ -3,9 +3,8 @@ import { getCollection } from 'astro:content';
 
 const allThoughts = await getCollection('thoughts');
 
-// Filter out meta thoughts and sort by title alphabetically
+// Sort by title alphabetically
 const sortedThoughts = [...allThoughts]
-  .filter(thought => !['digital-garden', 'nightwing-haven'].includes(thought.slug))
   .sort((a, b) => a.data.title.localeCompare(b.data.title));
 
 const maturityEmoji = {
@@ -28,30 +27,15 @@ const maturityEmoji = {
   <main class="container">
     <header class="garden-header">
       <h1>TwilightWorld<span class="domain">.ai</span></h1>
+      <p class="author">
+        <a href="https://www.linkedin.com/in/rodrigo-philander-a757081/" target="_blank" rel="noopener noreferrer">Rodrigo Philander</a>
+      </p>
       <p class="intro">
-        The world of traditional software, and of traditional software engineering, is ending. The autonomous, thinking systems of the future are among us. In this digital garden read my ongoing reflections on building software in the age of AI. Walk a <a href="#paths">path</a> or peruse all the <a href="#catalog">thoughts</a>.
+        The world of traditional software, and of traditional software engineering, is ending. The autonomous, thinking systems of the future are among us. In this digital garden read my ongoing reflections on building software in the age of AI.
       </p>
     </header>
 
-    <div class="maturity-key">
-      <span class="key-item"><span class="emoji">🌰</span> Seed: Ideas not yet written</span>
-      <span class="key-item"><span class="emoji">🌱</span> Sprout: Early explorations</span>
-      <span class="key-item"><span class="emoji">🌿</span> Growing: Developing thoughts</span>
-      <span class="key-item"><span class="emoji">🌳</span> Evergreen: Mature concepts</span>
-    </div>
-
-    <section class="paths" id="paths">
-      <h2 class="paths-heading">Paths through the Garden</h2>
-      <p class="path">
-        How do AI systems understand our code? <a href="/thoughts/semantic-binding">Semantic Binding <span class="thought-emoji">🌰</span></a> explores how AI connects meaning to code. This understanding enables <a href="/thoughts/atomic-programming">Atomic Programming <span class="thought-emoji">🌰</span></a>, where we structure software into composable units that AI can manipulate. Together, these create <a href="/thoughts/flash-programming">Flash Programming <span class="thought-emoji">🌰</span></a>—development cycles that move at the speed of thought.
-      </p>
-      <p class="path">
-        As AI augments our capabilities, we're entering an age of <a href="/thoughts/hypercompetence">Hypercompetence <span class="thought-emoji">🌰</span></a>—operating far beyond our natural limits. What does it mean to be a developer when the boundaries of individual capability expand exponentially?
-      </p>
-    </section>
-
-    <section class="catalog-section" id="catalog">
-      <h2 class="catalog-heading">Parts of the Algorithm</h2>
+    <section class="catalog-section">
       <ul class="thoughts-list">
       {sortedThoughts.map(thought => (
         <li class="thought-item">
@@ -65,6 +49,13 @@ const maturityEmoji = {
       ))}
       </ul>
     </section>
+
+    <div class="maturity-key">
+      <span class="key-item"><span class="emoji">🌰</span> Seed: Ideas not yet written</span>
+      <span class="key-item"><span class="emoji">🌱</span> Sprout: Early explorations</span>
+      <span class="key-item"><span class="emoji">🌿</span> Growing: Developing thoughts</span>
+      <span class="key-item"><span class="emoji">🌳</span> Evergreen: Mature concepts</span>
+    </div>
 
   </main>
 
@@ -127,26 +118,32 @@ const maturityEmoji = {
     color: #5a6f8f;
   }
 
+  .author {
+    margin-top: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .author a {
+    color: var(--color-text-muted);
+    text-decoration: none;
+    font-size: 1.1rem;
+    transition: color 0.2s;
+  }
+
+  .author a:hover {
+    color: var(--color-accent);
+  }
+
   .intro {
     max-width: 700px;
     color: var(--color-text-muted);
     margin-top: 0.5rem;
   }
 
-  .intro a {
-    color: var(--color-accent);
-    text-decoration: none;
-    transition: opacity 0.2s;
-  }
-
-  .intro a:hover {
-    opacity: 0.7;
-  }
-
   .maturity-key {
     display: flex;
     gap: 2rem;
-    margin-bottom: 3rem;
+    margin-top: 3rem;
     padding: 1rem;
     background: rgba(51, 65, 85, 0.3);
     border-radius: 0.5rem;
@@ -165,48 +162,8 @@ const maturityEmoji = {
     font-size: 1.2em;
   }
 
-  .paths {
-    margin-bottom: 3rem;
-  }
-
-  .paths-heading {
-    font-size: 2.5rem;
-    font-weight: 600;
-    margin-bottom: 2rem;
-    color: var(--color-text);
-  }
-
-  .path {
-    max-width: 700px;
-    color: var(--color-text-muted);
-    margin-bottom: 1.5rem;
-    line-height: 1.7;
-  }
-
-  .path a {
-    color: var(--color-accent);
-    text-decoration: none;
-    transition: opacity 0.2s;
-  }
-
-  .path a:hover {
-    opacity: 0.7;
-  }
-
-  .path .thought-emoji {
-    font-size: 0.9rem;
-    margin-left: 0.25rem;
-  }
-
   .catalog-section {
-    margin-top: 3rem;
-  }
-
-  .catalog-heading {
-    font-size: 2.5rem;
-    font-weight: 600;
-    margin-bottom: 2rem;
-    color: var(--color-text);
+    margin-top: 1rem;
   }
 
   .thoughts-list {
@@ -258,8 +215,8 @@ const maturityEmoji = {
 
   .footer {
     max-width: 1200px;
-    margin: 5rem auto 0;
-    padding: 3rem 1rem 2rem;
+    margin: 2rem auto 0;
+    padding: 2rem 1rem 2rem;
     text-align: left;
   }
 

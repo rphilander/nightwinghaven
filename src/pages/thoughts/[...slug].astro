@@ -88,14 +88,6 @@ const maturityLabel = {
           </time>
         )}
       </div>
-
-      {thought.data.tags && thought.data.tags.length > 0 && (
-        <div class="tags">
-          {thought.data.tags.map(tag => (
-            <span class="tag">{tag}</span>
-          ))}
-        </div>
-      )}
     </header>
 
     <article class="thought-content">
@@ -260,21 +252,6 @@ const maturityLabel = {
     gap: 1.5rem;
     font-size: 0.9rem;
     color: var(--color-text-muted);
-    margin-bottom: 1rem;
-  }
-
-  .tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-  }
-
-  .tag {
-    background: var(--color-border);
-    padding: 0.25rem 0.75rem;
-    border-radius: 0.5rem;
-    font-size: 0.85rem;
-    font-family: var(--font-mono);
   }
 
   .thought-content {
@@ -316,6 +293,13 @@ const maturityLabel = {
     padding: 0.2rem 0.4rem;
     border-radius: 0.25rem;
     font-size: 0.9em;
+  }
+
+  .thought-content :global(img) {
+    max-width: 100%;
+    height: auto;
+    margin: 2rem 0;
+    border-radius: 0.5rem;
   }
 
   .connections {

@@ -8,7 +8,6 @@ const thoughtsCollection = defineCollection({
     maturity: z.enum(['seed', 'sprout', 'growing', 'evergreen']),
     createdAt: z.date(),
     updatedAt: z.date(),
-    tags: z.array(z.string()).optional(),
     // Related thoughts - can reference thought IDs that don't exist yet
     relatedThoughts: z.array(z.string()).optional(),
   }),
