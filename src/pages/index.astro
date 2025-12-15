@@ -68,6 +68,19 @@ const maturityEmoji = {
   <footer class="footer">
     <p class="footer-quote">We live in a twilight world.</p>
     <p class="footer-response">And there are no friends at dusk.</p>
+
+    <div class="footer-subscribe">
+      <form
+        action="https://buttondown.com/api/emails/embed-subscribe/rphilander"
+        method="post"
+        target="_blank"
+      >
+        <input type="email" name="email" placeholder="your@email.com" required />
+        <button type="submit">Subscribe</button>
+      </form>
+      <p class="subscribe-note">Get notified when new thoughts are published</p>
+    </div>
+
     <p class="footer-rss"><a href="/rss.xml">RSS Feed</a></p>
   </footer>
 
@@ -245,6 +258,51 @@ const maturityEmoji = {
   .footer-response {
     font-style: italic;
     color: #999999;
+  }
+
+  .footer-subscribe {
+    margin-top: 2rem;
+  }
+
+  .footer-subscribe form {
+    display: flex;
+    gap: 0.5rem;
+    max-width: 400px;
+  }
+
+  .footer-subscribe input[type="email"] {
+    flex: 1;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--color-border);
+    border-radius: 0.25rem;
+    font-size: 0.9rem;
+    background: var(--color-bg);
+    color: var(--color-text);
+  }
+
+  .footer-subscribe input[type="email"]::placeholder {
+    color: var(--color-text-muted);
+  }
+
+  .footer-subscribe button {
+    padding: 0.5rem 1rem;
+    background: var(--color-accent);
+    color: white;
+    border: none;
+    border-radius: 0.25rem;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+
+  .footer-subscribe button:hover {
+    opacity: 0.9;
+  }
+
+  .subscribe-note {
+    margin-top: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
   }
 
   .footer-rss {
