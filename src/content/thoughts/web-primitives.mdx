@@ -1,10 +1,20 @@
 ---
 title: "Web Primitives"
-summary: "Technologies where LLMs excel: Go, HTTP, REST, JSON, HTML. Simple primitives that contribute to hypercompetence."
-maturity: "seed"
+summary: "The technology choices that keep atoms in the golden zone: Go, HTTP, REST, JSON, plain JavaScript."
+maturity: "growing"
 createdAt: 2025-11-15
-updatedAt: 2025-11-15
-relatedThoughts: ["hypercompetence"]
+updatedAt: 2025-12-15
+relatedThoughts: ["hypercompetence", "atomic-programming", "building-superpage"]
 ---
 
-This thought is still germinating. Check back soon for exploration of web primitives and how they enable LLM hypercompetence.
+[Hypercompetence](/thoughts/hypercompetence) is where this starts — that golden zone where LLMs generate useful code at stunning speed. The question becomes: how do I get as much hypercompetence as possible? [Atomic Programming](/thoughts/atomic-programming) is my answer for architecture and methodology — systems composed of small software atoms, each scoped to fit within the LLM's cognitive capacity. This page answers the next question: what building materials do we use to construct our atoms? What tech stack?
+
+One of the great things about LLMs is their encyclopedic knowledge of the technology landscape. I used to enjoy long discussions with Claude about the tradeoffs of different languages and frameworks for a particular project. But when it comes to rapidly building systems, that turns out to be a siren song. I actually want to be dogmatic — even dumb — about our tech choices. Cognitive load is much more a function of the tech stack itself than of the affinity between the tech stack and the project. Some stacks demand more cognitive load than others. The deeper into the tail of languages and frameworks you go, the harder the LLM has to work. Web Primitives gives me the balance I want: a wide range of useful systems I can build, while keeping atoms in the golden zone.
+
+The default stack is Go, HTTP/REST, and JSON. Go was surprising to me. Python and JavaScript are probably the most familiar languages for LLMs, but their flexibility works against us. Too many ways to do things. Too much design space to navigate. Go's "one way to do it" philosophy — even when it feels clunky — constrains the decision space. Static typing helps too. The LLM catches and fixes type errors rapidly, eliminating a whole class of bugs before they propagate.
+
+Beyond the language itself, the Go ecosystem brings its own advantages. Single-file executables with no dependencies make operating the system simpler — important when starting and stopping many atoms as you incrementally build. Build times are fast. The standard library and broader ecosystem have excellent support for HTTP and JSON — technologies that LLMs are deeply fluent in. HTTP and JSON also provide low-friction integration with the rest of the environment. Claude Code can use curl and jq to interact with running atoms. I can run curl and jq in a terminal, or use a web browser. It makes for a very fluid development experience.
+
+Atoms that provide user interfaces are the one big exception to this formula. The user interfaces are web pages — HTML, CSS, and JavaScript that run entirely in the browser. Go still plays a role: serving the HTML document and proxying REST requests to other atoms. HTML, CSS, and JavaScript are technologies that LLMs are deeply fluent in. Keep the JavaScript simple, pull in third-party libraries from CDNs when needed, and everything runs directly in the browser. No Node, no React, no Vue, no build step. No complexity around packaging or deploying. The toolchain stays simple.
+
+These are not sophisticated choices. They are deliberately primitive. HTTP, REST, JSON, plain JavaScript — technologies that have been around long enough to be deeply embedded in LLM training. The sophistication lives in how quickly and reliably atoms can be built, not in the atoms themselves.
