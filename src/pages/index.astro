@@ -22,6 +22,7 @@ const maturityEmoji = {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TwilightWorld.ai</title>
   <meta name="description" content="Thoughts on building software with AI">
+  <link rel="alternate" type="application/rss+xml" title="TwilightWorld.ai" href="/rss.xml" />
 </head>
 <body>
   <main class="container">
@@ -67,6 +68,7 @@ const maturityEmoji = {
   <footer class="footer">
     <p class="footer-quote">We live in a twilight world.</p>
     <p class="footer-response">And there are no friends at dusk.</p>
+    <p class="footer-rss"><a href="/rss.xml">RSS Feed</a></p>
   </footer>
 
 </body>
@@ -243,6 +245,20 @@ const maturityEmoji = {
   .footer-response {
     font-style: italic;
     color: #999999;
+  }
+
+  .footer-rss {
+    margin-top: 1.5rem;
+  }
+
+  .footer-rss a {
+    color: var(--color-text-muted);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+
+  .footer-rss a:hover {
+    color: var(--color-accent);
   }
 
   @media (max-width: 768px) {
