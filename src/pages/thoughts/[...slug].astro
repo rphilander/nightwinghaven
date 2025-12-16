@@ -53,7 +53,47 @@ const maturityLabel = {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{thought.data.title} | TwilightWorld.ai</title>
   <meta name="description" content={thought.data.summary}>
+  <link rel="canonical" href={`https://twilightworld.ai/thoughts/${thought.slug}/`} />
   <link rel="alternate" type="application/rss+xml" title="TwilightWorld.ai" href="/rss.xml" />
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content={`https://twilightworld.ai/thoughts/${thought.slug}/`} />
+  <meta property="og:title" content={thought.data.title} />
+  <meta property="og:description" content={thought.data.summary} />
+  <meta property="og:site_name" content="TwilightWorld.ai" />
+  <meta property="article:published_time" content={thought.data.createdAt.toISOString()} />
+  <meta property="article:modified_time" content={thought.data.updatedAt.toISOString()} />
+  <meta property="article:author" content="Rodrigo Philander" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content={thought.data.title} />
+  <meta name="twitter:description" content={thought.data.summary} />
+
+  <!-- JSON-LD Structured Data -->
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": thought.data.title,
+    "description": thought.data.summary,
+    "url": `https://twilightworld.ai/thoughts/${thought.slug}/`,
+    "datePublished": thought.data.createdAt.toISOString(),
+    "dateModified": thought.data.updatedAt.toISOString(),
+    "author": {
+      "@type": "Person",
+      "name": "Rodrigo Philander",
+      "url": "https://www.linkedin.com/in/rodrigo-philander-a757081/"
+    },
+    "publisher": {
+      "@type": "Person",
+      "name": "Rodrigo Philander"
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": `https://twilightworld.ai/thoughts/${thought.slug}/`
+    }
+  })} />
 </head>
 <body>
   <nav class="nav">
