@@ -66,12 +66,13 @@ src/
 
 Hosted on Netlify. DNS managed via Netlify DNS.
 
+**To publish changes, you must run:**
+
 ```bash
-netlify status        # Check connection
-netlify deploy --prod # Deploy to production
+netlify deploy --prod
 ```
 
-Git push also triggers auto-deploy.
+This builds the site and deploys to production. Git push alone does not publish — you need to run the deploy command.
 
 ## Newsletter
 
