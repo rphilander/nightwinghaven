@@ -1,10 +1,271 @@
 ---
 title: "Building Superpage"
-summary: "Applying atomic programming principles to build a real application."
-maturity: "seed"
+summary: "Putting Atomic Programming to the test by building a real application — a Hacker News monitor that catches stories I'd otherwise miss."
+maturity: "growing"
 createdAt: 2025-12-13
-updatedAt: 2025-12-13
-relatedThoughts: ["atomic-programming"]
+updatedAt: 2025-12-26
+relatedThoughts: ["atomic-programming", "web-primitives", "hypercompetence"]
 ---
 
-This thought is still germinating. Check back soon for a walkthrough of building an application using atomic programming.
+In an earlier post I described [Atomic Programming](/thoughts/atomic-programming) — decomposing systems into small components scoped to fit within the LLM's golden zone. This post puts those ideas to the test by building something real: a tool I actually want to use.
+
+The system is called Superpage. I visit Hacker News most days and get a lot of value from it — both the articles and the discussions. But I know I'm missing things. Stories rise to the front page, spark interesting conversations, and drop off again between my visits. I've stumbled across discussions with hundreds of comments on topics I care about, only to discover I missed them by a day or two.
+
+Superpage addresses this by widening the aperture. It monitors the front page frequently so I don't have to, stores what it finds, and gives me tools to sort, filter, and search through everything that's come and gone since my last visit.
+
+Going in, I treated Atomic Programming as a naive but interesting vision. Now I'd see what happens when it meets reality.
+
+## Iteration 0: Starting Point
+
+I started with something simpler than the full MVP — easy to build, but a reasonable foundation to iterate from.
+
+![Starting Point architecture](/superpage-starting-point.png)
+
+Five atoms, each named for its role in the system.
+
+**Rate Limiter** fetches HTML from Hacker News while enforcing a minimum interval between requests — keeping us a good citizen of the internet.
+
+**Parser** pulls pages from Rate Limiter, extracts the story data (headline, URL, points, comments, rank, age, etc.), and returns it as structured JSON.
+
+**Cacher** stores the parsed data in memory with a TTL, so we're not hitting Hacker News on every request.
+
+**Querier** applies filters and sorts to the cached stories — filter by points, by age, by number of comments.
+
+**WebUI** serves a web page that talks to the Querier. It's the only atom without a REST API of its own — just HTML, CSS, and JavaScript, with a Go server proxying requests to the backend.
+
+It worked, but not well. The Cacher's TTL had no relationship to what the user was doing — changing a filter might trigger a refresh, making the UI slow and showing different content than what you'd been looking at. And the UI was clunky: functional, but unoptimized, with too many clicks and wasted space. Both became targets for the next iteration.
+
+<div class="expand-toggle detail"><button>Expand All Details</button></div>
+
+<details class="detail">
+<summary>Configuring Atoms and Connecting Them</summary>
+
+Each atom is configured through command line arguments — port numbers, functional parameters like the rate limit interval or number of pages to fetch. This keeps operation simple: atoms are just shell commands with flags.
+
+I considered a global config file early on, but discarded it. Config files buy runtime flexibility to reduce future coding. But when coding is this cheap, hardcoded behavior is fine. Extensive configurability would itself consume cognitive load, pulling the LLM out of the golden zone.
+
+Every atom exposes `GET /doc`, returning documentation of its API. This is how atoms discover each other during development. The Parser prompt tells Claude to curl the Rate Limiter's `/doc` endpoint to understand what it's working with. Claude can also call the API directly — blurring the line between understanding the system and testing it.
+
+For running the full system, I use foreman with a Procfile. All the port numbers and parameters live in one place, easy to verify there are no collisions.
+
+</details>
+
+<details class="detail">
+<summary>Starting Point UI</summary>
+
+![Starting Point UI](/superpage-initial-ui.png)
+
+</details>
+
+<details class="detail">
+<summary>Full Rate Limiter Prompt</summary>
+
+<pre style="white-space: pre-wrap; background: #f5f5f5; padding: 1rem; border-radius: 4px; font-size: 0.9em;">
+This is a new greenfield project.
+We will build this in Go.
+It is called Rate Limiter.
+The executable will be called "ratelimiter".
+
+The purpose of the Rate Limiter is to fetch HTML docs from URLs, but to rate limit itself so as to not be a burden upon the remote website.
+
+The Rate Limiter will have two required command line arguments. --rate &lt;num-sec&gt; specifies a number of seconds as a positive integer. The semantics are that the Rate Limiter will make at most one HTTP request every &lt;num-sec&gt; seconds. --api &lt;port-no&gt; specifies the port number where the Rate Limiter's REST API can be accessed.
+
+The REST API will have an endpoint POST /fetch which causes the Rate Limiter to fetch a URL. The URL to be fetched is specified in the request body. The response body contains the HTML document retrieved from that URL. The request and response bodies are both JSON objects. If a request arrives too soon vis-a-vis the rate limit, then the request will block until the Rate Limiter is able to provide a response.
+
+The REST API has another endpoint GET /doc which returns detailed documentation of the entire REST API, including example requests and responses. The documentation does not need to concern itself with system internals or how to operate the system – it is only for clients of the REST API.
+
+When you are done coding make sure the system builds and runs correctly, then write a detailed README in case another developer needs to debug or enhance this system in the future.
+</pre>
+
+</details>
+
+<details class="detail">
+<summary>Full Parser Prompt</summary>
+
+<pre style="white-space: pre-wrap; background: #f5f5f5; padding: 1rem; border-radius: 4px; font-size: 0.9em;">
+This is a new greenfield project.
+We will build this in Go.
+It is called Parser.
+The executable will be called "parser".
+
+The Parser is part of a larger system. It depends upon a component called the Rate Limiter. Use curl to GET /doc from localhost:8080. That is the documentation for the API of the Rate Limiter.
+
+The role of the Parser is to obtain the current top stories from Hacker News and parse them into structured data. It will do this in response to client requests to its REST API. The Parser will not interact with Hacker News directly, rather it will use the Rate Limiter to obtain the HTML documents for Hacker News URLs: https://news.ycombinator.com/, https://news.ycombinator.com/?p=2, https://news.ycombinator.com/?p=3, and so forth. The number of pages it pulls from Hacker News is determined by a required command line parameter. It will then parse the content from those pages and return that information to the client as a single JSON object.
+
+The Parser will have three required command line arguments. --api &lt;port-no&gt; determines which port number the Parser listens for HTTP requests to its REST API. --ratelimiter tells the Parser which localhost port the Rate Limiter is listening on. --num-pages &lt;N&gt; tells the Parser how many Hacker News Pages to pull (must be a positive integer).
+
+The REST API will have an endpoint POST /fetch through which clients will obtain the Hacker News content. When a request arrives from the client, the Parser will request the N URLs from the Rate Limiter sequentially – no need for concurrency. When the Rate Limiter has the HTML documents it will parse them and construct the JSON object to return to the client. The object will have some top-level metadata about the N documents (when they were fetched, and so forth), as well as an array of stories. For each story there is a JSON object with fields for the headline, the URL of the article, the username of the submitter, the number of points, the number of comments, the URL of the discussion page, the story id (HN's identifier – so that we can track stories over time if we like), the story's current rank, and the story's page as two fields: the units (hours, days, etc.) and the age measured in those units (this mirrors the information HN displays in its web pages).
+
+The REST API has another endpoint GET /doc which returns detailed documentation of the entire REST API, including example requests and responses. The documentation does not need to concern itself with system internals or how to operate the system – it is only for clients of the REST API.
+
+When you are done coding make sure the system builds and runs correctly, then write a detailed README in case another developer needs to debug or enhance this system in the future. To test the system you will use curl to obtain the structured data from the Parser and then also use curl to pull the actual HTML from Hacker News and make sure the two align.
+</pre>
+
+</details>
+
+<div class="expand-toggle reflection"><button>Expand All Reflections</button></div>
+
+<details class="reflection">
+<summary>On Minimal Prompts</summary>
+
+Notice what the prompts don't specify: endpoint names, JSON field names, internal structure. I describe the capability needed, not how to implement it. The LLM makes reasonable choices, and reasonable is good enough.
+
+This is high leverage. Short prompts are fast to write and fast to modify. I'm not managing detailed specifications — I'm sketching intent and letting the LLM fill in the rest. The less the definition spills into implementation details, the more freedom I have to iterate.
+
+I do specify `POST /fetch` explicitly, but only because otherwise Claude tends to ask what the endpoint should be called. That question is a waste of time.
+
+</details>
+
+<details class="reflection">
+<summary>Why Coupling Is Fine</summary>
+
+Traditional API design tries to decouple components — hedge against future changes you're only guessing at. Clean abstractions insulate one part of the system from changes in another.
+
+With Atomic Programming, the calculus shifts. We can respond to changes when we know what they are, rather than guessing upfront. If three atoms are tightly coupled, throw them all away and rebuild all three. That's not scary when each takes minutes.
+
+Coupling makes larger changes more likely, but it also makes those changes cheaper. The time you'd spend designing elegant abstractions can go toward just building the thing.
+
+</details>
+
+<details class="reflection">
+<summary>On Speed</summary>
+
+Implementation took about 45 minutes across the five atoms — roughly 10 minutes each once the prompt was ready. Including time to think through what to build and write the prompts, maybe two hours total.
+
+There's evident inefficiency in that 45 minutes. After pasting a prompt, Claude formulates a plan and asks clarifying questions. These occasionally surfaced something useful, but often felt performative — like Claude felt obligated to ask questions before starting. I want to lean toward learning by building, not planning.
+
+Other overhead: starting and stopping atoms manually, managing the Procfile, context-switching between Claude and my terminal. Better tooling could automate much of this. I suspect a well-automated flow could cut the time significantly and let me stay hands-off.
+
+</details>
+
+<details class="reflection">
+<summary>Build Many to Throw Away</summary>
+
+I was intentionally reckless. Since implementation is cheap, failed ideas cost less. The minimum bar was a system I could interact with — real enough to learn from, even if not refined enough to use daily.
+
+"Build one to throw away" becomes "build many to throw away." I knew the Starting Point wouldn't be the final system. I knew the next iteration wouldn't be either. That's fine. Each version gets me closer and teaches me something.
+
+</details>
+
+## Iteration 1: Adding Refresh
+
+The fix: remove the Cacher. The Querier now holds content in memory itself, with a new endpoint to trigger a refresh. When the user clicks a refresh button in the UI, the Querier discards its data and pulls fresh content through the Parser.
+
+I threw away the Cacher, rewrote the Querier and WebUI prompts, and rebuilt both. About two hours including thinking time.
+
+![Adding Refresh architecture](/superpage-adding-refresh.png)
+
+## Iteration 2: Moving to a Database
+
+Persistent storage was the next step. With the system harvesting snapshots continuously, I could catch stories that rose and fell between my visits.
+
+I replaced the Querier with ContentDB — a SQLite-backed store — and added a Harvester to periodically pull content from the Parser and write it to the database. The UI needed rethinking too: instead of one list of stories, the user would select a time range and choose a view — stories that reached the highest rank, accrued the most points, or received the most comments.
+
+![Moving to a Database architecture](/superpage-database.png)
+
+It didn't work. ContentDB passed Claude's smoke tests in isolation, but once the full system was running, queries that should have returned stories came back empty. Claude and I tried debugging, but after a few rounds of Claude declaring victory while bugs persisted, I pulled the plug.
+
+My intuition: ContentDB was too big. Too many responsibilities. I'd pushed past the golden zone.
+
+<details class="detail">
+<summary><strong>Detail:</strong> How the UI Concepts Emerged</summary>
+
+This came from conversation with Claude. Once ContentDB was complete, Claude could inspect its API and query it for actual data. From that back-and-forth arose the idea of time ranges and views — let the user specify a window of time, then choose how to slice it: highest rank achieved, most points, most comments.
+
+The UI moved from "here are the current stories" to "here's what happened in this time window."
+
+</details>
+
+<div class="expand-toggle reflection"><button>Expand All Reflections</button></div>
+
+<details class="reflection">
+<summary>The API Design Epiphany</summary>
+
+As I discussed ContentDB with Claude, I had it inspect the Parser's API to understand the data shape. Claude suggested the write endpoint could match the Parser's output exactly — same JSON structure, no transformation.
+
+This felt like an epiphany. I'm used to thinking carefully about API design, trying to strike a balance between addressing the problem and keeping things decoupled. But here, the simple, stupid route was better. No abstraction layer, no mapping between shapes. The Harvester just passes data through.
+
+The price is coupling — Parser, Harvester, and ContentDB are now intertwined. Change one, potentially change all three. But that's the Atomic Programming tradeoff: coupling makes larger changes more likely, and also makes them cheaper.
+
+</details>
+
+<details class="reflection">
+<summary>On Coupling and Abstraction</summary>
+
+Traditional API design hedges against future risks you're only guessing at. Time spent on clean abstractions is time spent navigating nuanced tradeoffs about changes that may never come.
+
+Atomic Programming lets you respond when you know what the changes are. That's a much simpler problem. You're not trying to predict the future — you're just rebuilding when the future arrives.
+
+</details>
+
+## Iteration 3: Splitting ContentDB
+
+I split ContentDB into two atoms. SnapshotDB handles persistence only — it periodically fetches from the Parser and stores snapshots to disk, and serves them back by time range. Window Viewer takes a time range and a view type, pulls the relevant snapshots, and computes the result.
+
+I rebuilt the UI (renamed Window UI) and pointed Claude at the Window Viewer's API.
+
+![Splitting ContentDB architecture](/superpage-split.png)
+
+It worked. Two or three hours, and I was back in the golden zone. The issue with ContentDB wasn't just size — it was abstraction. I'd been thinking of it as a generic data store, which made the API and storage model more complex than necessary. The new atoms were simpler because they were less abstract.
+
+## Iteration 4: Window UI
+
+With the backend stable, I turned to the UI. Here I diverged from the approach that had worked so far. Instead of writing a prompt and rebuilding, I iterated rapidly with Claude — asking for changes, trying them, adjusting.
+
+The improvements were mostly layout and density: moving controls into a single row, removing redundant labels, reclaiming space for content.
+
+I couldn't have designed this without the rapid iteration. The loop from idea to implementation to testing was fast enough to stay in one train of thought.
+
+<details class="detail">
+<summary><strong>Detail:</strong> The Time Range Selector</summary>
+
+The most interesting UI element was the time range selector. I wanted Fibonacci-scaled intervals (1h, 2h, 3h, 5h, 8h...) as a single row of buttons, with two always selected to mark the start and end of the range.
+
+This created a UX puzzle: when you click a new button, is it the new start or the new end? Claude and I landed on a stateful interaction — first click triggers an animation indicating "waiting for second click," second click sets the new range. If the second click doesn't arrive within a few seconds, the animation stops and it resets.
+
+![Final UI](/superpage-final-ui.png)
+
+</details>
+
+<details class="reflection">
+<summary><strong>Reflection:</strong> Why Prompts Didn't Work Here</summary>
+
+For the backend atoms, I didn't care about details. Endpoint names, JSON field names, internal structure — the LLM made reasonable choices and reasonable was fine.
+
+The UI was different. I cared about whether labels existed, how buttons were arranged, what the interaction felt like. That level of detail isn't amenable to minimal prompts. To capture what I wanted, I'd need something approaching a specification — which defeats the point.
+
+So I let the code become the source of truth. The prompt went away. Whether this holds up long-term, I don't know. If the code bloats over time, can I still pull it into context and keep iterating? My tentative answer is some blend of prompts and reference implementations — "model the UI after this repo, with these adjustments." But that's speculation.
+
+</details>
+
+## Overall Reflections
+
+Looking back, a layered architecture emerged naturally. Rate Limiter and Parser were defined once and never changed — basic capabilities that were well understood from the start. The middle tier evolved significantly but stayed within the AP approach. The UI was different: once I moved past placeholder mode, I needed direct control over details in a way that didn't fit the prompt-and-rebuild pattern.
+
+I'm curious what happens next. The testing has been rudimentary — smoke tests by Claude, some manual poking. As I run this daily, will corner cases emerge? In principle they're easy to fix, but there's requirements management involved: making sure rebuilt atoms don't replicate old bugs. I don't yet know where that information lives — in the prompts? A separate tracker?
+
+<div class="expand-toggle reflection"><button>Expand All Reflections</button></div>
+
+<details class="reflection">
+<summary>On Audience of One</summary>
+
+The UI choices I made were personal. Having an audience of one made optimization easier — I only needed to please myself. That's very different from designing for millions of users.
+
+Maybe this hints at where software is going. If building is cheap enough, "product" becomes less about designing for the average user and more about empowering people to craft interfaces for themselves. An audience of one might be the right scale.
+
+</details>
+
+<details class="reflection">
+<summary>Does This Challenge the Premise?</summary>
+
+If bugs emerge at scale, does that undermine Atomic Programming's premise — that atoms are small and simple enough for the LLM to implement with few mistakes?
+
+Not necessarily. Bugs are inevitable in any approach. The question is whether they're manageable. If I can track issues and rebuild atoms quickly, the premise holds. If I end up in an endless whack-a-mole cycle, it doesn't.
+
+I'll find out.
+
+</details>
+
+## Appendix: Prompts and Source Code
+
+The prompts and source code are on [GitHub](https://github.com/rphilander/superpage-phase1). Looking back, each iteration should have been a commit — but I only thought to share this after the journey was underway. The repo reflects the final state.

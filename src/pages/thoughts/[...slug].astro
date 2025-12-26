@@ -391,4 +391,147 @@ const maturityLabel = {
   .thought-link .title {
     flex: 1;
   }
+
+  /* Expandable sections: Detail and Reflection */
+  .thought-content :global(details) {
+    margin: 1.5rem 0;
+    border-radius: 0.5rem;
+    overflow: hidden;
+  }
+
+  .thought-content :global(details summary) {
+    cursor: pointer;
+    padding: 0.75rem 1rem;
+    font-weight: 500;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: background 0.2s;
+  }
+
+  .thought-content :global(details summary::-webkit-details-marker) {
+    display: none;
+  }
+
+  .thought-content :global(details summary::before) {
+    content: '▸';
+    font-size: 0.8em;
+    transition: transform 0.2s;
+  }
+
+  .thought-content :global(details[open] summary::before) {
+    transform: rotate(90deg);
+  }
+
+  .thought-content :global(details > *:not(summary)) {
+    padding: 0 1rem 1rem 1rem;
+  }
+
+  /* Detail sections - blue accent */
+  .thought-content :global(details.detail) {
+    border-left: 4px solid #3b82f6;
+    background: rgba(59, 130, 246, 0.05);
+  }
+
+  .thought-content :global(details.detail summary) {
+    background: rgba(59, 130, 246, 0.1);
+  }
+
+  .thought-content :global(details.detail summary:hover) {
+    background: rgba(59, 130, 246, 0.15);
+  }
+
+  .thought-content :global(details.detail[open]) {
+    background: rgba(59, 130, 246, 0.08);
+  }
+
+  /* Reflection sections - amber accent */
+  .thought-content :global(details.reflection) {
+    border-left: 4px solid #f59e0b;
+    background: rgba(245, 158, 11, 0.05);
+  }
+
+  .thought-content :global(details.reflection summary) {
+    background: rgba(245, 158, 11, 0.1);
+  }
+
+  .thought-content :global(details.reflection summary:hover) {
+    background: rgba(245, 158, 11, 0.15);
+  }
+
+  .thought-content :global(details.reflection[open]) {
+    background: rgba(245, 158, 11, 0.08);
+  }
+
+  /* Pre blocks inside details */
+  .thought-content :global(details pre) {
+    margin: 0;
+    background: rgba(0, 0, 0, 0.03);
+    border-radius: 0.25rem;
+  }
+
+  /* Expand/Collapse toggle controls */
+  .thought-content :global(.expand-toggle) {
+    margin: 1.5rem 0 0.5rem;
+  }
+
+  .thought-content :global(.expand-toggle button) {
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    font-weight: 500;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  /* Detail toggle - blue */
+  .thought-content :global(.expand-toggle.detail button) {
+    background: rgba(59, 130, 246, 0.1);
+    border: 2px solid #3b82f6;
+    color: #2563eb;
+  }
+
+  .thought-content :global(.expand-toggle.detail button:hover) {
+    background: rgba(59, 130, 246, 0.2);
+  }
+
+  /* Reflection toggle - amber */
+  .thought-content :global(.expand-toggle.reflection button) {
+    background: rgba(245, 158, 11, 0.1);
+    border: 2px solid #f59e0b;
+    color: #b45309;
+  }
+
+  .thought-content :global(.expand-toggle.reflection button:hover) {
+    background: rgba(245, 158, 11, 0.2);
+  }
 </style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.expand-toggle').forEach(toggle => {
+      const btn = toggle.querySelector('button');
+      const type = toggle.classList.contains('detail') ? 'detail' : 'reflection';
+      const label = type === 'detail' ? 'Details' : 'Reflections';
+      let expanded = false;
+
+      btn.addEventListener('click', () => {
+        expanded = !expanded;
+        btn.textContent = expanded ? `Collapse All ${label}` : `Expand All ${label}`;
+
+        let sibling = toggle.nextElementSibling;
+        while (sibling && sibling.tagName !== 'H2' && !sibling.classList.contains('expand-toggle')) {
+          if (sibling.tagName === 'DETAILS' && sibling.classList.contains(type)) {
+            if (expanded) {
+              sibling.setAttribute('open', '');
+            } else {
+              sibling.removeAttribute('open');
+            }
+          }
+          sibling = sibling.nextElementSibling;
+        }
+      });
+    });
+  });
+</script>
