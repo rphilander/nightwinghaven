@@ -32,50 +32,29 @@ Going in, I treated Atomic Programming as a naive but interesting vision. Now I 
 
 I started with a small "Starting Point" — a simplified version of the MVP that was easy to build but gave me something real to work with. From there I iterated four times, with the system usable at the end of each iteration. Below I describe each step in some detail, with expandable sections for those who want to dig deeper. After each step, I share what I learned and how it informed what came next. At the end there are some overall reflections, and a link to all the prompts and source code.
 
-## Iteration 0: Starting Point
+## Starting Point
 
 I started with something simpler than the full MVP — easy to build, but a reasonable foundation to iterate from.
 
-![Starting Point architecture](/superpage-starting-point.png)
+<figure>
+  <img src="/superpage-starting-point.png" alt="Starting Point architecture" />
+  <figcaption style="text-align: center; font-size: 0.9em; color: #666; font-style: italic; margin-top: 0.5rem;">Five atoms, each named for its role in the system.</figcaption>
+</figure>
 
-Five atoms, each named for its role in the system.
+**Rate Limiter** fetches HTML from Hacker News while enforcing a minimum interval between requests — keeping us a good citizen of the internet. **Parser** pulls pages from Rate Limiter, extracts the story data (headline, URL, points, comments, rank, age, etc.), and returns structured JSON. **Cacher** stores the parsed data in memory with a TTL, so we're not hitting Hacker News on every request. **Querier** applies filters and sorts to the cached stories — filter by points, by age, by number of comments. **WebUI** serves a web page that talks to the Querier — the only atom without a REST API, just HTML, CSS, and JavaScript, with a Go server proxying requests to the backend.
 
-**Rate Limiter** fetches HTML from Hacker News while enforcing a minimum interval between requests — keeping us a good citizen of the internet.
+The Cacher was silly in retrospect. I was trying to avoid database complexity while still storing content locally — a reasonable instinct, but the TTL approach was flawed in a way I realized even before using it. As the atoms came together, I could see what would happen: the cache refresh had no relationship to what the user was doing. Change a filter, and depending on timing, the system might pull fresh content from Hacker News. The UI would go slow, and worse, show you different stories than what you'd been looking at. You'd ask to filter the content you were seeing, but the filter would apply to new content that arrived because of the TTL. That became the first thing to fix.
 
-**Parser** pulls pages from Rate Limiter, extracts the story data (headline, URL, points, comments, rank, age, etc.), and returns it as structured JSON.
+The UI was clunky too, but that was fine. I'd pointed Claude at the Querier's API and said "build an appropriate UI for that" — maybe ten minutes of effort. What I got was functional but unoptimized: too many clicks, wasted vertical space, unnecessary labels. It served as a placeholder, though, which was exactly what I needed. It let me interact with the system and exercise its features while I focused on evolving the backend. The real UI work would come later.
 
-**Cacher** stores the parsed data in memory with a TTL, so we're not hitting Hacker News on every request.
-
-**Querier** applies filters and sorts to the cached stories — filter by points, by age, by number of comments.
-
-**WebUI** serves a web page that talks to the Querier. It's the only atom without a REST API of its own — just HTML, CSS, and JavaScript, with a Go server proxying requests to the backend.
-
-It worked, but not well. The Cacher's TTL had no relationship to what the user was doing — changing a filter might trigger a refresh, making the UI slow and showing different content than what you'd been looking at. And the UI was clunky: functional, but unoptimized, with too many clicks and wasted space. Both became targets for the next iteration.
-
-<div class="expand-toggle detail"><button>Expand All Details</button></div>
+None of this bothered me. I knew the Starting Point would be flawed, and given how rapidly it came together, flaws were acceptable. Having actual running code is always a great reality check — I was getting firsthand experiential knowledge in a couple of hours. And I knew I could rebuild parts or all of it just as rapidly.
 
 <details class="detail">
-<summary>Configuring Atoms and Connecting Them</summary>
+<summary>The Prompts — what they specify, what they leave open, and why minimal works.</summary>
 
-Each atom is configured through command line arguments — port numbers, functional parameters like the rate limit interval or number of pages to fetch. This keeps operation simple: atoms are just shell commands with flags.
+Here are the full prompts for Rate Limiter and Parser. The other atoms follow the same structure.
 
-I considered a global config file early on, but discarded it. Config files buy runtime flexibility to reduce future coding. But when coding is this cheap, hardcoded behavior is fine. Extensive configurability would itself consume cognitive load, pulling the LLM out of the golden zone.
-
-Every atom exposes `GET /doc`, returning documentation of its API. This is how atoms discover each other during development. The Parser prompt tells Claude to curl the Rate Limiter's `/doc` endpoint to understand what it's working with. Claude can also call the API directly — blurring the line between understanding the system and testing it.
-
-For running the full system, I use foreman with a Procfile. All the port numbers and parameters live in one place, easy to verify there are no collisions.
-
-</details>
-
-<details class="detail">
-<summary>Starting Point UI</summary>
-
-![Starting Point UI](/superpage-initial-ui.png)
-
-</details>
-
-<details class="detail">
-<summary>Full Rate Limiter Prompt</summary>
+**Rate Limiter:**
 
 <pre style="white-space: pre-wrap; background: #f5f5f5; padding: 1rem; border-radius: 4px; font-size: 0.9em;">
 This is a new greenfield project.
@@ -94,10 +73,7 @@ The REST API has another endpoint GET /doc which returns detailed documentation 
 When you are done coding make sure the system builds and runs correctly, then write a detailed README in case another developer needs to debug or enhance this system in the future.
 </pre>
 
-</details>
-
-<details class="detail">
-<summary>Full Parser Prompt</summary>
+**Parser:**
 
 <pre style="white-space: pre-wrap; background: #f5f5f5; padding: 1rem; border-radius: 4px; font-size: 0.9em;">
 This is a new greenfield project.
@@ -118,34 +94,20 @@ The REST API has another endpoint GET /doc which returns detailed documentation 
 When you are done coding make sure the system builds and runs correctly, then write a detailed README in case another developer needs to debug or enhance this system in the future. To test the system you will use curl to obtain the structured data from the Parser and then also use curl to pull the actual HTML from Hacker News and make sure the two align.
 </pre>
 
-</details>
+**What these prompts share:** The first few lines are boilerplate — greenfield, Go, name, executable. Then a sentence about the atom's role in the larger system, providing minimal but useful context. Then command line arguments for configuration — port numbers and functional parameters. Then the REST API, which is the core of the atom's definition. Finally, `GET /doc` and instructions to test.
 
-<div class="expand-toggle reflection"><button>Expand All Reflections</button></div>
-
-<details class="reflection">
-<summary>On Minimal Prompts</summary>
-
-Notice what the prompts don't specify: endpoint names, JSON field names, internal structure. I describe the capability needed, not how to implement it. The LLM makes reasonable choices, and reasonable is good enough.
-
-This is high leverage. Short prompts are fast to write and fast to modify. I'm not managing detailed specifications — I'm sketching intent and letting the LLM fill in the rest. The less the definition spills into implementation details, the more freedom I have to iterate.
+**What they leave open:** Notice what the prompts don't specify: JSON field names, internal structure, error handling details. I describe the capability needed, not how to implement it. The LLM makes reasonable choices, and reasonable is good enough. This is high leverage — short prompts are fast to write and fast to modify. I'm sketching intent and letting the LLM fill in the rest. The less the definition spills into implementation details, the more freedom I have to iterate.
 
 I do specify `POST /fetch` explicitly, but only because otherwise Claude tends to ask what the endpoint should be called. That question is a waste of time.
 
-</details>
+**The `/doc` endpoint:** Every atom exposes `GET /doc`, returning documentation of its API. This is how atoms discover each other during development. The Parser prompt tells Claude to curl the Rate Limiter's `/doc` endpoint to understand what it's working with. Claude can also call the API directly — blurring the line between understanding the system and testing it.
 
-<details class="reflection">
-<summary>Why Coupling Is Fine</summary>
-
-Traditional API design tries to decouple components — hedge against future changes you're only guessing at. Clean abstractions insulate one part of the system from changes in another.
-
-With Atomic Programming, the calculus shifts. We can respond to changes when we know what they are, rather than guessing upfront. If three atoms are tightly coupled, throw them all away and rebuild all three. That's not scary when each takes minutes.
-
-Coupling makes larger changes more likely, but it also makes those changes cheaper. The time you'd spend designing elegant abstractions can go toward just building the thing.
+**Why coupling is fine:** Traditional API design tries to decouple components — hedge against future changes you're only guessing at. With Atomic Programming, the calculus shifts. We can respond to changes when we know what they are, rather than guessing upfront. If three atoms are tightly coupled, throw them all away and rebuild all three. That's not scary when each takes minutes. Coupling makes larger changes more likely, but it also makes those changes cheaper.
 
 </details>
 
-<details class="reflection">
-<summary>On Speed</summary>
+<details class="detail">
+<summary>On Speed and Iteration — 45 minutes of implementation, a couple hours total, and the "build many to throw away" mindset.</summary>
 
 Implementation took about 45 minutes across the five atoms — roughly 10 minutes each once the prompt was ready. Including time to think through what to build and write the prompts, maybe two hours total.
 
@@ -153,24 +115,35 @@ There's evident inefficiency in that 45 minutes. After pasting a prompt, Claude 
 
 Other overhead: starting and stopping atoms manually, managing the Procfile, context-switching between Claude and my terminal. Better tooling could automate much of this. I suspect a well-automated flow could cut the time significantly and let me stay hands-off.
 
-</details>
-
-<details class="reflection">
-<summary>Build Many to Throw Away</summary>
-
 I was intentionally reckless. Since implementation is cheap, failed ideas cost less. The minimum bar was a system I could interact with — real enough to learn from, even if not refined enough to use daily.
 
 "Build one to throw away" becomes "build many to throw away." I knew the Starting Point wouldn't be the final system. I knew the next iteration wouldn't be either. That's fine. Each version gets me closer and teaches me something.
 
 </details>
 
+<details class="detail">
+<summary>The Starting Point UI — functional but clunky, which was fine for now.</summary>
+
+![Starting Point UI](/superpage-initial-ui.png)
+
+The placeholder UI that Claude generated with minimal guidance. You can see the inefficiencies: every filter control takes up its own row, wasting vertical space that should go to the content. The labels are redundant — "Min Points" next to an input field labeled "Min Points." Every change requires multiple clicks. The sorting controls duplicate the filter layout pattern even though they work differently.
+
+(Note: the "Refresh" button visible here is actually from the next iteration — that's the screenshot I had on hand. In the true Starting Point, the refresh was automatic via the Cacher's TTL, which as discussed was a flawed design.)
+
+</details>
+
 ## Iteration 1: Adding Refresh
 
-The fix: remove the Cacher. The Querier now holds content in memory itself, with a new endpoint to trigger a refresh. When the user clicks a refresh button in the UI, the Querier discards its data and pulls fresh content through the Parser.
+The fix: remove the Cacher and have the Querier hold content in memory instead. The Querier's API stayed mostly the same, plus a new endpoint to trigger a refresh. When called, it discards its data and pulls fresh content through the Parser — which triggers the Rate Limiter, which hits Hacker News. The WebUI gained a refresh button to invoke this flow. I threw away the Cacher and its prompt, rewrote the Querier and WebUI prompts, and rebuilt both. About two hours including thinking time.
 
-I threw away the Cacher, rewrote the Querier and WebUI prompts, and rebuilt both. About two hours including thinking time.
+<figure>
+  <img src="/superpage-adding-refresh.png" alt="Adding Refresh architecture" />
+  <figcaption style="text-align: center; font-size: 0.9em; color: #666; font-style: italic; margin-top: 0.5rem;">Blue for less frequent refreshes, red for more frequent filtering and sorting.</figcaption>
+</figure>
 
-![Adding Refresh architecture](/superpage-adding-refresh.png)
+This was a significant change architecturally — I removed an entire atom and rewrote two others. And it still didn't land me at MVP. The system was better, but I knew it wasn't the version I'd ultimately use. That was fine. Iteration was cheap enough that I didn't need each version to be a milestone.
+
+In a way, I was extending "build one to throw away" into "build many to throw away." I would build as many intermediate versions as I needed, each getting me closer, none needing to justify its existence beyond what I learned from it.
 
 ## Iteration 2: Moving to a Database
 
