@@ -7,13 +7,30 @@ updatedAt: 2025-12-26
 relatedThoughts: ["atomic-programming", "web-primitives", "hypercompetence"]
 ---
 
-In an earlier post I described [Atomic Programming](/thoughts/atomic-programming) — decomposing systems into small components scoped to fit within the LLM's golden zone. This post puts those ideas to the test by building something real: a tool I actually want to use.
+## Introduction
 
-The system is called Superpage. I visit Hacker News most days and get a lot of value from it — both the articles and the discussions. But I know I'm missing things. Stories rise to the front page, spark interesting conversations, and drop off again between my visits. I've stumbled across discussions with hundreds of comments on topics I care about, only to discover I missed them by a day or two.
+In an earlier post I described [Atomic Programming](/thoughts/atomic-programming) which is a novel approach to building software systems. The idea is to decompose systems into quite small components called atoms, each of which is easily and quickly buildable by the LLM with a low error rate. This is based on the general observation that LLMs are dramatically more effective when we keep their cognitive load low — what I call [hypercompetence](/thoughts/hypercompetence). Atomic Programming tries to keep the LLM in its hypercompetent "golden zone" all the time, so while I still need to make product and architectural decisions, the time spent on implementation becomes vanishingly small.
+
+The purpose of this post is to walk through actually creating a system using the Atomic Programming approach. This is a "real" system meaning it addresses a need I am actually experiencing in real life, and I feel that if I can build the system I have in mind it will address that need sufficiently well that I would use it regularly — on a daily basis.
+
+## Superpage
+
+The system is called Superpage. Its purpose is to make me a more efficient consumer of Hacker News content. I visit the HN homepage most days and get a huge amount of value from it — both the articles and the discussions. But I know there's more value to be had if I spent more time on the site. At the same time, I don't want to spend more time on the site — or more accurately, I don't want to spend less time doing other things. The vision for Superpage is to be a kind of "time multiplier": half an hour spent on Superpage will be like spending several hours on Hacker News itself.
+
+The MVP addresses the stories I flat out miss. In between my daily visits, stories resonate with the community, accumulate points, rise to the front page, spark interesting discussions, and then descend and disappear — all before I check in again. More than once I've Googled something and found a Hacker News thread with hundreds of comments from just days ago — it had come and gone between my daily visits.
 
 Superpage addresses this by widening the aperture. It monitors the front page frequently so I don't have to, stores what it finds, and gives me tools to sort, filter, and search through everything that's come and gone since my last visit.
 
-Going in, I treated Atomic Programming as a naive but interesting vision. Now I'd see what happens when it meets reality.
+<figure>
+  <img src="/superpage-context.png" alt="Superpage context diagram" />
+  <figcaption style="text-align: center; font-size: 0.9em; color: #666; font-style: italic; margin-top: 0.5rem;">Superpage monitors HN frequently so you don't have to.</figcaption>
+</figure>
+
+## The Build
+
+Going in, I treated Atomic Programming as a naive but interesting vision. Now I would see what happens when that vision meets reality. Reality is always more complex than what we imagine. This journey would show me which parts of Atomic Programming are strong and which need to evolve. And that's exactly what happened — which is not to say the journey is finished. It's more like going from looking at a map and imagining the trip, to actually journeying that first leg.
+
+I started with a small "Starting Point" — a simplified version of the MVP that was easy to build but gave me something real to work with. From there I iterated four times, with the system usable at the end of each iteration. Below I describe each step in some detail, with expandable sections for those who want to dig deeper. After each step, I share what I learned and how it informed what came next. At the end there are some overall reflections, and a link to all the prompts and source code.
 
 ## Iteration 0: Starting Point
 
