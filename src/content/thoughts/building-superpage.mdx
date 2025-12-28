@@ -173,41 +173,46 @@ The price is coupling — Parser, Harvester, and ContentDB are now intertwined. 
 
 ## Iteration 3: Splitting ContentDB
 
-I split ContentDB into two atoms. SnapshotDB handles persistence only — it periodically fetches from the Parser and stores snapshots to disk, and serves them back by time range. Window Viewer takes a time range and a view type, pulls the relevant snapshots, and computes the result.
+I broke ContentDB into two simpler atoms. **SnapshotDB** handles persistence only — it stores snapshots to disk and serves them back by time range. No querying logic, no views, just storage and retrieval. I also folded the Harvester into SnapshotDB; a command line parameter sets the snapshot frequency, and SnapshotDB handles the periodic fetches from the Parser itself. One less atom to manage.
 
-I rebuilt the UI (renamed Window UI) and pointed Claude at the Window Viewer's API.
+**Window Viewer** handles the query logic that ContentDB had tried to combine with storage. Its API takes a time range and a view type — highest rank, most points, most comments — pulls the relevant snapshots from SnapshotDB, and computes the result.
 
-![Splitting ContentDB architecture](/superpage-split.png)
+I rebuilt the UI (renamed **Window UI**, thinking I might have additional pages later) and pointed Claude at the Window Viewer's API.
 
-It worked. Two or three hours, and I was back in the golden zone. The issue with ContentDB wasn't just size — it was abstraction. I'd been thinking of it as a generic data store, which made the API and storage model more complex than necessary. The new atoms were simpler because they were less abstract.
+<figure>
+  <img src="/superpage-split.png" alt="Splitting ContentDB architecture" />
+  <figcaption style="text-align: center; font-size: 0.9em; color: #666; font-style: italic; margin-top: 0.5rem;">SnapshotDB absorbed the Harvester; Window Viewer took over query logic.</figcaption>
+</figure>
+
+It worked. Two or three hours, and this version of Superpage "just worked." The issue with ContentDB wasn't just size — it was abstraction. I'd been thinking of it as a generic data store, which made the API and storage model more complex than necessary. The new atoms were simpler because they were less abstract — SnapshotDB just stores snapshots, Window Viewer just computes views.
+
+This validated what I'd realized earlier with the API design: sacrificing the reusability of clean abstractions makes sense when building is this fast. You're not paying for insurance against risks you're only guessing at. You're just rebuilding when you know what the changes actually are.
 
 ## Iteration 4: Window UI
 
-With the backend stable, I turned to the UI. Here I diverged from the approach that had worked so far. Instead of writing a prompt and rebuilding, I iterated rapidly with Claude — asking for changes, trying them, adjusting.
+With the backend stable, I returned to the UI. As noted earlier, Claude had produced something functional but clunky with minimal guidance — too many clicks, wasted vertical space, redundant labels. I'd left it as a placeholder while figuring out the rest of the system. Now it was time to optimize.
 
-The improvements were mostly layout and density: moving controls into a single row, removing redundant labels, reclaiming space for content.
+Given the level of detail I cared about — whether labels existed, how buttons were arranged, what the interaction felt like — I decided to bypass the prompt and iterate directly with Claude. I would ask for changes, try them, adjust. Claude offered suggestions of its own. The loop from idea to implementation to testing was fast enough to stay in one train of thought.
 
-I couldn't have designed this without the rapid iteration. The loop from idea to implementation to testing was fast enough to stay in one train of thought.
+<figure>
+  <img src="/superpage-final-ui.png" alt="Final Window UI" />
+  <figcaption style="text-align: center; font-size: 0.9em; color: #666; font-style: italic; margin-top: 0.5rem;">The optimized UI — controls consolidated, labels removed, space reclaimed for content.</figcaption>
+</figure>
+
+The optimizations covered layout and interaction: consolidating controls into fewer rows, removing redundant labels, reclaiming space for content. The most sophisticated change was the time range selector.
+
+I'd expected to go back and create a prompt once I landed on a design I liked. But by the time iterating was done, that clearly wouldn't work. Capturing all the detail would require something approaching a specification — which defeats the point of minimal prompts. So I let the code become the source of truth. The prompt went away. This is where prompts show their power as leverage points: they work because they're concise. Once they balloon into detailed specifications, the leverage disappears. For now, the Window UI lives as code. Whether this holds up long-term — whether I can keep pulling it into context as it grows — I don't know.
 
 <details class="detail">
-<summary><strong>Detail:</strong> The Time Range Selector</summary>
+<summary>Time Range Selector — Fibonacci-scaled buttons with a stateful two-click interaction.</summary>
 
-The most interesting UI element was the time range selector. I wanted Fibonacci-scaled intervals (1h, 2h, 3h, 5h, 8h...) as a single row of buttons, with two always selected to mark the start and end of the range.
+I wanted Fibonacci-scaled intervals (1h, 2h, 3h, 5h, 8h...) as a single row of buttons, with two always selected to mark start and end of the range. This created a UX puzzle: when you click a new button, is it the new start or the new end?
 
-This created a UX puzzle: when you click a new button, is it the new start or the new end? Claude and I landed on a stateful interaction — first click triggers an animation indicating "waiting for second click," second click sets the new range. If the second click doesn't arrive within a few seconds, the animation stops and it resets.
+The solution was a stateful two-click interaction. Initially two buttons are selected showing the current range. Click any button and it highlights differently — pulsing to signal the system is waiting for a second click. Click another button and those two become the new range. If you don't click within a few seconds, the animation stops and it resets.
 
-![Final UI](/superpage-final-ui.png)
+<img src="/timeselector.gif" alt="Time range selector interaction" style="max-width: 100%; border-radius: 4px; margin: 1rem 0;" />
 
-</details>
-
-<details class="reflection">
-<summary><strong>Reflection:</strong> Why Prompts Didn't Work Here</summary>
-
-For the backend atoms, I didn't care about details. Endpoint names, JSON field names, internal structure — the LLM made reasonable choices and reasonable was fine.
-
-The UI was different. I cared about whether labels existed, how buttons were arranged, what the interaction felt like. That level of detail isn't amenable to minimal prompts. To capture what I wanted, I'd need something approaching a specification — which defeats the point.
-
-So I let the code become the source of truth. The prompt went away. Whether this holds up long-term, I don't know. If the code bloats over time, can I still pull it into context and keep iterating? My tentative answer is some blend of prompts and reference implementations — "model the UI after this repo, with these adjustments." But that's speculation.
+This emerged through iteration. The first implementation had the puzzle but no solution — clicking a button produced unpredictable behavior. Claude and I tried several approaches before landing on the stateful model. The animation was Claude's suggestion.
 
 </details>
 
