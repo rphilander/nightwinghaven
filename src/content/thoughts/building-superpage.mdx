@@ -28,7 +28,7 @@ Superpage addresses this by widening the aperture. It monitors the front page fr
 
 ## The Build
 
-Going in, I treated Atomic Programming as a naive but interesting vision. Now I would see what happens when that vision meets reality. Reality is always more complex than what we imagine. This journey would show me which parts of Atomic Programming are strong and which need to evolve. And that's exactly what happened — which is not to say the journey is finished. It's more like going from looking at a map and imagining the trip, to actually journeying that first leg.
+Going in, I treated Atomic Programming as an interesting but naive vision. Now I would see what happens when that vision meets reality. Reality is always more complex than what we imagine. This journey would show me which parts of Atomic Programming are strong and which need to evolve. And that's exactly what happened — which is not to say the journey is finished. It's more like going from looking at a map and imagining the trip, to actually journeying that first leg.
 
 I started with a small "Starting Point" — a simplified version of the MVP that was easy to build but gave me something real to work with. From there I iterated four times, with the system usable at the end of each iteration. Below I describe each step in some detail, with expandable sections for those who want to dig deeper. After each step, I share what I learned and how it informed what came next. At the end there are some overall reflections, and a link to all the prompts and source code.
 
@@ -43,14 +43,14 @@ I started with something simpler than the full MVP — easy to build, but a reas
 
 **Rate Limiter** fetches HTML from Hacker News while enforcing a minimum interval between requests — keeping us a good citizen of the internet. **Parser** pulls pages from Rate Limiter, extracts the story data (headline, URL, points, comments, rank, age, etc.), and returns structured JSON. **Cacher** stores the parsed data in memory with a TTL, so we're not hitting Hacker News on every request. **Querier** applies filters and sorts to the cached stories — filter by points, by age, by number of comments. **WebUI** serves a web page that talks to the Querier — the only atom without a REST API, just HTML, CSS, and JavaScript, with a Go server proxying requests to the backend.
 
+This came together in a couple of hours — and most of that was me thinking through different approaches and landing on an architecture, not waiting for the LLM to code. I expected flaws — and that was fine. Having actual running code is always a great reality check; I was getting firsthand experiential knowledge rapidly, and I knew I could rebuild parts or all of it just as fast. Two things stood out.
+
 The Cacher was silly in retrospect. I was trying to avoid database complexity while still storing content locally — a reasonable instinct, but the TTL approach was flawed in a way I realized even before using it. As the atoms came together, I could see what would happen: the cache refresh had no relationship to what the user was doing. Change a filter, and depending on timing, the system might pull fresh content from Hacker News. The UI would go slow, and worse, show you different stories than what you'd been looking at. You'd ask to filter the content you were seeing, but the filter would apply to new content that arrived because of the TTL. That became the first thing to fix.
 
 The UI was clunky too, but that was fine. I'd pointed Claude at the Querier's API and said "build an appropriate UI for that" — maybe ten minutes of effort. What I got was functional but unoptimized: too many clicks, wasted vertical space, unnecessary labels. It served as a placeholder, though, which was exactly what I needed. It let me interact with the system and exercise its features while I focused on evolving the backend. The real UI work would come later.
 
-None of this bothered me. I knew the Starting Point would be flawed, and given how rapidly it came together, flaws were acceptable. Having actual running code is always a great reality check — I was getting firsthand experiential knowledge in a couple of hours. And I knew I could rebuild parts or all of it just as rapidly.
-
 <details class="detail">
-<summary>The Prompts — what they specify, what they leave open, and why minimal works.</summary>
+<summary>The Prompts — full prompts of the Rate Limiter and Parser with commentary.</summary>
 
 Here are the full prompts for Rate Limiter and Parser. The other atoms follow the same structure.
 
@@ -107,22 +107,7 @@ I do specify `POST /fetch` explicitly, but only because otherwise Claude tends t
 </details>
 
 <details class="detail">
-<summary>On Speed and Iteration — 45 minutes of implementation, a couple hours total, and the "build many to throw away" mindset.</summary>
-
-Implementation took about 45 minutes across the five atoms — roughly 10 minutes each once the prompt was ready. Including time to think through what to build and write the prompts, maybe two hours total.
-
-There's evident inefficiency in that 45 minutes. After pasting a prompt, Claude formulates a plan and asks clarifying questions. These occasionally surfaced something useful, but often felt performative — like Claude felt obligated to ask questions before starting. I want to lean toward learning by building, not planning.
-
-Other overhead: starting and stopping atoms manually, managing the Procfile, context-switching between Claude and my terminal. Better tooling could automate much of this. I suspect a well-automated flow could cut the time significantly and let me stay hands-off.
-
-I was intentionally reckless. Since implementation is cheap, failed ideas cost less. The minimum bar was a system I could interact with — real enough to learn from, even if not refined enough to use daily.
-
-"Build one to throw away" becomes "build many to throw away." I knew the Starting Point wouldn't be the final system. I knew the next iteration wouldn't be either. That's fine. Each version gets me closer and teaches me something.
-
-</details>
-
-<details class="detail">
-<summary>The Starting Point UI — functional but clunky, which was fine for now.</summary>
+<summary>User Interface — screenshot of the initial UI.</summary>
 
 ![Starting Point UI](/superpage-initial-ui.png)
 
