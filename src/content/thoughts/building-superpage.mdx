@@ -147,44 +147,27 @@ In a way, I was extending "build one to throw away" into "build many to throw aw
 
 ## Iteration 2: Moving to a Database
 
-Persistent storage was the next step. With the system harvesting snapshots continuously, I could catch stories that rose and fell between my visits.
+Persistent storage was the next step — and a big one. With the system harvesting snapshots continuously, I could finally realize the core vision: catch stories that rose and fell between my visits. No more missing that thread with hundreds of comments that came and went while I was away.
 
-I replaced the Querier with ContentDB — a SQLite-backed store — and added a Harvester to periodically pull content from the Parser and write it to the database. The UI needed rethinking too: instead of one list of stories, the user would select a time range and choose a view — stories that reached the highest rank, accrued the most points, or received the most comments.
+I replaced the Querier with ContentDB — a SQLite-backed store — and added a Harvester to periodically pull content from the Parser and write it to the database. The UI needed rethinking too. With ContentDB complete, Claude could inspect its API and query actual data, and from that back-and-forth arose the new model: instead of one list of stories, the user would select a time range and choose a view — highest rank achieved, most points, most comments. The UI moved from "here are the current stories" to "here's what happened in this time window."
 
-![Moving to a Database architecture](/superpage-database.png)
+<figure>
+  <img src="/superpage-database.png" alt="Moving to a Database architecture" />
+  <figcaption style="text-align: center; font-size: 0.9em; color: #666; font-style: italic; margin-top: 0.5rem;">ContentDB handled both storage and query logic — too much for one atom.</figcaption>
+</figure>
 
-It didn't work. ContentDB passed Claude's smoke tests in isolation, but once the full system was running, queries that should have returned stories came back empty. Claude and I tried debugging, but after a few rounds of Claude declaring victory while bugs persisted, I pulled the plug.
+It didn't work. ContentDB passed Claude's smoke tests in isolation, but once the full system was running, queries that should have returned stories came back empty. Claude and I tried debugging — more than once Claude declared victory while bugs persisted. I pulled the plug fairly quickly. This wasn't a problem I wanted to solve through debugging.
 
-My intuition: ContentDB was too big. Too many responsibilities. I'd pushed past the golden zone.
+My intuition: ContentDB was too big. I'd been thinking of it as a somewhat generic data store, which made the API and storage model more abstract — and therefore more complex — than necessary. Too many responsibilities in one atom. I'd pushed past the golden zone.
 
 <details class="detail">
-<summary><strong>Detail:</strong> How the UI Concepts Emerged</summary>
-
-This came from conversation with Claude. Once ContentDB was complete, Claude could inspect its API and query it for actual data. From that back-and-forth arose the idea of time ranges and views — let the user specify a window of time, then choose how to slice it: highest rank achieved, most points, most comments.
-
-The UI moved from "here are the current stories" to "here's what happened in this time window."
-
-</details>
-
-<div class="expand-toggle reflection"><button>Expand All Reflections</button></div>
-
-<details class="reflection">
-<summary>The API Design Epiphany</summary>
+<summary>The API Design Epiphany — why matching the Parser's output exactly was the right move, and what it costs.</summary>
 
 As I discussed ContentDB with Claude, I had it inspect the Parser's API to understand the data shape. Claude suggested the write endpoint could match the Parser's output exactly — same JSON structure, no transformation.
 
 This felt like an epiphany. I'm used to thinking carefully about API design, trying to strike a balance between addressing the problem and keeping things decoupled. But here, the simple, stupid route was better. No abstraction layer, no mapping between shapes. The Harvester just passes data through.
 
-The price is coupling — Parser, Harvester, and ContentDB are now intertwined. Change one, potentially change all three. But that's the Atomic Programming tradeoff: coupling makes larger changes more likely, and also makes them cheaper.
-
-</details>
-
-<details class="reflection">
-<summary>On Coupling and Abstraction</summary>
-
-Traditional API design hedges against future risks you're only guessing at. Time spent on clean abstractions is time spent navigating nuanced tradeoffs about changes that may never come.
-
-Atomic Programming lets you respond when you know what the changes are. That's a much simpler problem. You're not trying to predict the future — you're just rebuilding when the future arrives.
+The price is coupling — Parser, Harvester, and ContentDB are now intertwined. Change one, potentially change all three. But that's the Atomic Programming tradeoff: coupling makes larger changes more likely, and also makes them cheaper. Traditional API design hedges against future risks you're only guessing at. Time spent on clean abstractions is time spent navigating nuanced tradeoffs about changes that may never come. Atomic Programming lets you respond when you know what the changes are. That's a much simpler problem. You're not trying to predict the future — you're just rebuilding when the future arrives.
 
 </details>
 
