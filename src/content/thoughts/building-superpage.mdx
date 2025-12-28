@@ -218,31 +218,11 @@ This emerged through iteration. The first implementation had the puzzle but no s
 
 ## Overall Reflections
 
-Looking back, a layered architecture emerged naturally. Rate Limiter and Parser were defined once and never changed — basic capabilities that were well understood from the start. The middle tier evolved significantly but stayed within the AP approach. The UI was different: once I moved past placeholder mode, I needed direct control over details in a way that didn't fit the prompt-and-rebuild pattern.
+Looking back, a layered architecture emerged naturally. Rate Limiter and Parser were defined once and never changed — basic capabilities that were well understood from the start. The middle tier — where content was stored and transformed into views — evolved significantly, but well within the Atomic Programming approach. Significant changes in how data was obtained, stored, and served happened smoothly, typically requiring two or three hours of my time.
 
-I'm curious what happens next. The testing has been rudimentary — smoke tests by Claude, some manual poking. As I run this daily, will corner cases emerge? In principle they're easy to fix, but there's requirements management involved: making sure rebuilt atoms don't replicate old bugs. I don't yet know where that information lives — in the prompts? A separate tracker?
+The UI layer was different, and perhaps more protean than the others. Once I moved past placeholder mode, I needed direct control over details in a way that didn't fit the prompt-and-rebuild pattern. The choices I made were personal ones. Having an audience of one made optimization easier — I only needed to please myself. That's very different from places I've worked, where a great deal of thought goes into designing for millions of users. Maybe this hints at where software is going: if building is cheap enough, "product" becomes less about designing for the average user and more about empowering people to craft interfaces for themselves. An audience of one might be the right scale.
 
-<div class="expand-toggle reflection"><button>Expand All Reflections</button></div>
-
-<details class="reflection">
-<summary>On Audience of One</summary>
-
-The UI choices I made were personal. Having an audience of one made optimization easier — I only needed to please myself. That's very different from designing for millions of users.
-
-Maybe this hints at where software is going. If building is cheap enough, "product" becomes less about designing for the average user and more about empowering people to craft interfaces for themselves. An audience of one might be the right scale.
-
-</details>
-
-<details class="reflection">
-<summary>Does This Challenge the Premise?</summary>
-
-If bugs emerge at scale, does that undermine Atomic Programming's premise — that atoms are small and simple enough for the LLM to implement with few mistakes?
-
-Not necessarily. Bugs are inevitable in any approach. The question is whether they're manageable. If I can track issues and rebuild atoms quickly, the premise holds. If I end up in an endless whack-a-mole cycle, it doesn't.
-
-I'll find out.
-
-</details>
+I'm pretty happy with where Superpage is, and I'm excited to start using it. But I'm curious how things will turn out in terms of quality. The testing has been rudimentary by the standards of my professional life — smoke tests by Claude, some manual poking. As I set this up to run in the cloud and use it daily, will corner cases emerge? In principle they're easy to fix, but there's requirements management involved: making sure rebuilt atoms don't replicate old bugs. I don't yet know where that information lives — in the prompts? A separate tracker?
 
 ## Appendix: Prompts and Source Code
 
