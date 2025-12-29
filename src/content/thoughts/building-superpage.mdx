@@ -119,77 +119,60 @@ The placeholder UI that Claude generated with minimal guidance. You can see the 
 
 ## Iteration 1: Adding Refresh
 
-The fix: remove the Cacher and have the Querier hold content in memory instead. The Querier's API stayed mostly the same, plus a new endpoint to trigger a refresh. When called, it discards its data and pulls fresh content through the Parser — which triggers the Rate Limiter, which hits Hacker News. The WebUI gained a refresh button to invoke this flow. I threw away the Cacher and its prompt, rewrote the Querier and WebUI prompts, and rebuilt both. About two hours including thinking time.
+To address the cache TTL issue, I removed the Cacher entirely and added a notion of "refresh" to the system. Now the Querier holds content in memory and exposes an endpoint to trigger a refresh — discarding its data and pulling fresh content through the Parser, which in turn hits the Rate Limiter and ultimately Hacker News. The WebUI gained a refresh button to invoke this flow. I threw away the Cacher and its prompt, rewrote the prompts for the Querier and WebUI, and rebuilt both — about two hours including thinking time.
 
 <figure>
   <img src="/superpage-adding-refresh.png" alt="Adding Refresh architecture" />
   <figcaption style="text-align: center; font-size: 0.9em; color: #666; font-style: italic; margin-top: 0.5rem;">Blue for less frequent refreshes, red for more frequent filtering and sorting.</figcaption>
 </figure>
 
-This was a significant change architecturally — I removed an entire atom and rewrote two others. And it still didn't land me at MVP. The system was better, but I knew it wasn't the version I'd ultimately use. That was fine. Iteration was cheap enough that I didn't need each version to be a milestone.
-
-In a way, I was extending "build one to throw away" into "build many to throw away." I would build as many intermediate versions as I needed, each getting me closer, none needing to justify its existence beyond what I learned from it.
+In some ways this felt odd — I was immediately making significant architectural changes to a system I had just built, knowing that even after these changes I still wouldn't have an MVP. Several more iterations would be needed for that. But the cost of iteration was low, and there was something clarifying about working with an actual running system I could use and observe. "Build one to throw away" was becoming "build many to throw away" — each version getting me closer, none needing to justify itself beyond what I learned from it.
 
 ## Iteration 2: Moving to a Database
 
-Persistent storage was the next step — and a big one. With the system harvesting snapshots continuously, I could finally realize the core vision: catch stories that rose and fell between my visits. No more missing that thread with hundreds of comments that came and went while I was away.
+The refresh concept from Iteration 1 made the system more usable, but I wanted to evolve it further — moving from user-triggered refreshes to automatic harvesting of Hacker News content at a set frequency. The idea was that this would happen continuously, regardless of whether I was using the application, which furthered the overall vision of decoupling my consumption of the content from the interactions with Hacker News itself. Since this meant storing significantly more data, I also decided to move from in-memory storage to on-disk persistence.
 
-I replaced the Querier with ContentDB — a SQLite-backed store — and added a Harvester to periodically pull content from the Parser and write it to the database. The UI needed rethinking too. With ContentDB complete, Claude could inspect its API and query actual data, and from that back-and-forth arose the new model: instead of one list of stories, the user would select a time range and choose a view — highest rank achieved, most points, most comments. The UI moved from "here are the current stories" to "here's what happened in this time window."
+I replaced the Querier with **ContentDB** — a SQLite-backed store — and added a **Harvester** to periodically pull content from the Parser and write it to the database. The ContentDB API had two main endpoints. The write endpoint allowed the Harvester to store content obtained from the Parser as-is — the same JSON object, no transformation. The read endpoint was similar to the earlier Querier API but with the addition of start and end times; ContentDB would aggregate the data within that time span and then apply filters and sorts. The WebUI was rebuilt to include specification of the time span.
 
 <figure>
   <img src="/superpage-database.png" alt="Moving to a Database architecture" />
   <figcaption style="text-align: center; font-size: 0.9em; color: #666; font-style: italic; margin-top: 0.5rem;">ContentDB handled both storage and query logic — too much for one atom.</figcaption>
 </figure>
 
-It didn't work. ContentDB passed Claude's smoke tests in isolation, but once the full system was running, queries that should have returned stories came back empty. Claude and I tried debugging — more than once Claude declared victory while bugs persisted. I pulled the plug fairly quickly. This wasn't a problem I wanted to solve through debugging.
+Collaborating with Claude on the API design was something of an epiphany. Because the Parser was already up and running, Claude could inspect its API and propose a straightforward approach: have the ContentDB write endpoint accept the Parser's output as-is, same JSON structure, no transformation. The same pattern repeated when building the WebUI — Claude designed it against the running ContentDB API. This was shifting my sense of Atomic Programming. I had been thinking of atoms as standalone, well-understood components. But what was emerging was more incremental: each atom defined with respect to those that preceded it. The tradeoff is less modularity, but you gain speed. I was already working at something like the speed of thought, and this approach reduced that "thought" further by removing the cognitive load of designing clean abstractions upfront.
 
-My intuition: ContentDB was too big. I'd been thinking of it as a somewhat generic data store, which made the API and storage model more abstract — and therefore more complex — than necessary. Too many responsibilities in one atom. I'd pushed past the golden zone.
-
-<details class="detail">
-<summary>The API Design Epiphany — why matching the Parser's output exactly was the right move, and what it costs.</summary>
-
-As I discussed ContentDB with Claude, I had it inspect the Parser's API to understand the data shape. Claude suggested the write endpoint could match the Parser's output exactly — same JSON structure, no transformation.
-
-This felt like an epiphany. I'm used to thinking carefully about API design, trying to strike a balance between addressing the problem and keeping things decoupled. But here, the simple, stupid route was better. No abstraction layer, no mapping between shapes. The Harvester just passes data through.
-
-The price is coupling — Parser, Harvester, and ContentDB are now intertwined. Change one, potentially change all three. But that's the Atomic Programming tradeoff: coupling makes larger changes more likely, and also makes them cheaper. Traditional API design hedges against future risks you're only guessing at. Time spent on clean abstractions is time spent navigating nuanced tradeoffs about changes that may never come. Atomic Programming lets you respond when you know what the changes are. That's a much simpler problem. You're not trying to predict the future — you're just rebuilding when the future arrives.
-
-</details>
+When I engaged with the full system as a user, I ran into quality issues. Queries that should have returned stories came back empty; filters that worked in isolation failed when combined. I tried debugging with Claude, but it didn't go well — more than once Claude declared victory while bugs persisted. I was out of the golden zone. My diagnosis: ContentDB was doing too much.
 
 ## Iteration 3: Splitting ContentDB
 
-I broke ContentDB into two simpler atoms. **SnapshotDB** handles persistence only — it stores snapshots to disk and serves them back by time range. No querying logic, no views, just storage and retrieval. I also folded the Harvester into SnapshotDB; a command line parameter sets the snapshot frequency, and SnapshotDB handles the periodic fetches from the Parser itself. One less atom to manage.
+My response was to simplify. I doubled down on the KISS snapshot concept that was already present in the Parser and the ContentDB write endpoint. **SnapshotDB** would not only store content as snapshots — that's also how content would be read. You provide start and end times, and you get back an array of snapshots. With this design, the Harvester was doing almost nothing — an odd pass-through atom. So I added scheduling functionality to SnapshotDB itself; it pulls directly from the Parser on a set interval. One less atom to manage.
 
-**Window Viewer** handles the query logic that ContentDB had tried to combine with storage. Its API takes a time range and a view type — highest rank, most points, most comments — pulls the relevant snapshots from SnapshotDB, and computes the result.
-
-I rebuilt the UI (renamed **Window UI**, thinking I might have additional pages later) and pointed Claude at the Window Viewer's API.
+For the query logic, I created a new atom: **Window Viewer**. Its API was equivalent to ContentDB's read endpoint — a time span plus filters and sorts — but the implementation was simpler. It pulls the relevant snapshots from SnapshotDB and applies the "window" logic to compute the result. I rebuilt the UI (renamed **Window UI** at this point) and pointed Claude at the Window Viewer's API.
 
 <figure>
   <img src="/superpage-split.png" alt="Splitting ContentDB architecture" />
   <figcaption style="text-align: center; font-size: 0.9em; color: #666; font-style: italic; margin-top: 0.5rem;">SnapshotDB absorbed the Harvester; Window Viewer took over query logic.</figcaption>
 </figure>
 
-It worked. Two or three hours, and this version of Superpage "just worked." The issue with ContentDB wasn't just size — it was abstraction. I'd been thinking of it as a generic data store, which made the API and storage model more complex than necessary. The new atoms were simpler because they were less abstract — SnapshotDB just stores snapshots, Window Viewer just computes views.
-
-This validated what I'd realized earlier with the API design: sacrificing the reusability of clean abstractions makes sense when building is this fast. You're not paying for insurance against risks you're only guessing at. You're just rebuilding when you know what the changes actually are.
+This time the system was stable when I actually used it. The approach felt validated — both Atomic Programming in general, and the more incremental, less modular style that had emerged along the way.
 
 ## Iteration 4: Window UI
 
-With the backend stable, I returned to the UI. As noted earlier, Claude had produced something functional but clunky with minimal guidance — too many clicks, wasted vertical space, redundant labels. I'd left it as a placeholder while figuring out the rest of the system. Now it was time to optimize.
+With the backend stable, I returned to Window UI. As noted earlier, Claude had produced something functional but clunky with minimal guidance — too many clicks, wasted vertical space, redundant labels. I'd left it as a placeholder while figuring out the rest of the system. Now it was time to optimize.
 
-Given the level of detail I cared about — whether labels existed, how buttons were arranged, what the interaction felt like — I decided to bypass the prompt and iterate directly with Claude. I would ask for changes, try them, adjust. Claude offered suggestions of its own. The loop from idea to implementation to testing was fast enough to stay in one train of thought.
+I'm happy with where this came out, but surprised by how I got there. This was another example of Atomic Programming evolving organically in real time. Making the UI good meant lots of small tweaks and trying different ideas, and I naturally did this in direct collaboration with Claude Code: we discussed a change, Claude implemented it, I tried it. Having a modified UI running live on top of a real system in seconds was remarkable. We collaborated for maybe an hour and came up with what I feel is quite a good design. But I was never able to find my way back to a prompt — which tells me the Atomic Programming idea of prompts as source of truth needs to be more nuanced. I think this is specific to UI, where I'm sensitive to small details in a way I'm not with other atoms.
+
+The optimizations covered layout and interaction: consolidating controls into fewer rows, removing redundant labels, reclaiming space for content. The most sophisticated change was the time range selector.
 
 <figure>
   <img src="/superpage-final-ui.png" alt="Final Window UI" />
   <figcaption style="text-align: center; font-size: 0.9em; color: #666; font-style: italic; margin-top: 0.5rem;">The optimized UI — controls consolidated, labels removed, space reclaimed for content.</figcaption>
 </figure>
 
-The optimizations covered layout and interaction: consolidating controls into fewer rows, removing redundant labels, reclaiming space for content. The most sophisticated change was the time range selector.
-
-I'd expected to go back and create a prompt once I landed on a design I liked. But by the time iterating was done, that clearly wouldn't work. Capturing all the detail would require something approaching a specification — which defeats the point of minimal prompts. So I let the code become the source of truth. The prompt went away. This is where prompts show their power as leverage points: they work because they're concise. Once they balloon into detailed specifications, the leverage disappears. For now, the Window UI lives as code. Whether this holds up long-term — whether I can keep pulling it into context as it grows — I don't know.
+How to manage UI atoms without a prompt as anchor is something I'm still working out. My intuition is that source code will end up being the source of truth — detailed specifications and diagrams seem like unnecessary overhead. But I'm not confident the LLM can revise the same codebase indefinitely; my expectation is that it will eventually become bloated and internally disorganized. I don't yet know how to address that. The other thing I suspect is that UI tinkering will be an ongoing process — I don't think the UI layer will ever be "done" and frozen. This touches on a whole aspect of Atomic Programming I have yet to explore: how it impacts conventional notions of deployment and change management. That's an exercise for the future, but I think it will also shape how UI atoms are ultimately managed and represented.
 
 <details class="detail">
-<summary>Time Range Selector — Fibonacci-scaled buttons with a stateful two-click interaction.</summary>
+<summary>Time Range Selector — details of how the two-step range selector works.</summary>
 
 I wanted Fibonacci-scaled intervals (1h, 2h, 3h, 5h, 8h...) as a single row of buttons, with two always selected to mark start and end of the range. This created a UX puzzle: when you click a new button, is it the new start or the new end?
 
@@ -203,11 +186,11 @@ This emerged through iteration. The first implementation had the puzzle but no s
 
 ## Overall Reflections
 
-Looking back, a layered architecture emerged naturally. Rate Limiter and Parser were defined once and never changed — basic capabilities that were well understood from the start. The middle tier — where content was stored and transformed into views — evolved significantly, but well within the Atomic Programming approach. Significant changes in how data was obtained, stored, and served happened smoothly, typically requiring two or three hours of my time.
+Going through this process, I was struck by how much of what I'm used to doing as an engineer reflects a world where implementing ideas is expensive. Detailed specifications, careful upfront analysis, clean abstractions to decouple components — these are all insurance against building the wrong thing. You invest in planning because mistakes are costly to fix.
 
-The UI layer was different, and perhaps more protean than the others. Once I moved past placeholder mode, I needed direct control over details in a way that didn't fit the prompt-and-rebuild pattern. The choices I made were personal ones. Having an audience of one made optimization easier — I only needed to please myself. That's very different from places I've worked, where a great deal of thought goes into designing for millions of users. Maybe this hints at where software is going: if building is cheap enough, "product" becomes less about designing for the average user and more about empowering people to craft interfaces for themselves. An audience of one might be the right scale.
+But the economics are shifting. Building the wrong thing isn't expensive anymore — not when you can throw it away and rebuild in a couple of hours. And you learn so much faster from actual running code than from artifacts that try to model it through abstract concepts. A specification is a guess about what the code should do; running code is the thing itself.
 
-I'm pretty happy with where Superpage is, and I'm excited to start using it. But I'm curious how things will turn out in terms of quality. The testing has been rudimentary by the standards of my professional life — smoke tests by Claude, some manual poking. As I set this up to run in the cloud and use it daily, will corner cases emerge? In principle they're easy to fix, but there's requirements management involved: making sure rebuilt atoms don't replicate old bugs. I don't yet know where that information lives — in the prompts? A separate tracker?
+What fascinated me most was realizing how internalized those old economics are. Even knowing that rebuilding was cheap, I still felt the pull toward upfront design, toward getting it right the first time. That instinct doesn't disappear overnight. But this journey made it visible — and that feels like the first step toward something new.
 
 ## Appendix: Prompts and Source Code
 
